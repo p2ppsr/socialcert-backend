@@ -25,6 +25,10 @@ perl -E'
     DOJO_URL \
     PERSONA_TOKEN \
     NANOSTORE_URL \
+    DISCORD_API_ENDPOINT \
+    DISCORD_CLIENT_ID \
+    DISCORD_CLIENT_SECRET \
+    REDIRECT_URI \
     SIGNIA_DB_CONNECTION >> $1
 
 echo "Built! Contents of $1:"
