@@ -27,51 +27,35 @@ async function getMongoClient () {
   return mongoClient
 }
 
+// unsure what identityKey is
 const saveCertificate = async (identityKey, certificate, tx, derivationPrefix, derivationSuffix) => {
   const mongoClient = await getMongoClient()
-  // Updates certificate issuances data for a verified identity
-  const filter = {
-    identityKey,
-    verificationId: { $ne: undefined }
-  }
-  const update = {
-    $set: {
-      certificate,
-      tx,
-      derivationPrefix,
-      derivationSuffix,
-      updatedAt: new Date()
-    }
-  }
 
-  await mongoClient.db(`${DB_NAME}`).collection('certifications').updateOne(filter, update)
-}
-
-const saveVerificationProof = async (identityKey, verificationId, expirationDate) => {
-  const mongoClient = await getMongoClient()
-
-  // Insert verification proof for a new certificate
+  // Inserts certified data for created user
   await mongoClient.db(`${DB_NAME}`).collection('certifications').insertOne({
     identityKey,
-    verificationId,
-    expirationDate,
+    certificate, 
+    tx, 
+    derivationPrefix,
+    derivationSuffix,
     createdAt: new Date()
   })
+  
 }
+
+
 
 const getVerificationProof = async (identityKey) => {
   const mongoClient = await getMongoClient()
 
-  // Filter by identity key and verificationId
+  // Filter by identity key and identityKey
   const filter = {
     identityKey,
-    verificationId: { $ne: undefined }
   }
 
   // Only select relevant data
   const projection = {
-    verificationId: 1,
-    expirationDate: 1
+    certificate: 1
   }
 
   // Return the matching result
@@ -138,7 +122,6 @@ const loadCertificate = async (identityKey) => {
 
 module.exports = {
   saveCertificate,
-  saveVerificationProof,
   getVerificationProof,
   getRevocationData,
   loadCertificate,

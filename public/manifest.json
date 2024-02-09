@@ -1,0 +1,11 @@
+{
+  "name": "IdentiCert",
+  "babbage": {
+    "trust": {
+      "name": "IdentiCert",
+      "note": "Certifies legal first and last name, and photos",
+      "icon": "https://staging-identicert.babbage.systems/favicon.ico",
+      "publicKey": "036dc48522aba1705afbb43df3c04dbd1da373b6154341a875bceaa2a3e7f21528"
+    }
+  }
+}

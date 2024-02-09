@@ -88,8 +88,8 @@ module.exports = {
       // Make sure this certificate has been verified
       const results = await getVerificationProof(req.authrite.identityKey)
 
-      // Make sure a validated verificationId is been added and the certificate is not already expired
-      if (!results || !results.verificationId || !results.expirationDate || (new Date(results.expirationDate) < new Date())) {
+      // Make sure a validated certificate has been added 
+      if (!results || !results.certificate) {
         return res.status(400).json({
           status: 'error',
           code: 'ERR_CERTIFICATE_NOT_VALID',
