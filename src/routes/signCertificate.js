@@ -85,17 +85,17 @@ module.exports = {
       // Save the sender's identityKey as the subject of the certificate
       req.body.subject = req.authrite.identityKey
 
+      // NOTE: There is no certificate at this point yet! Maybe there should be an identifier that the user data came from this server?
       // Make sure this certificate has been verified
-      const results = await getVerificationProof(req.authrite.identityKey)
-
+      // const results = await getVerificationProof(req.authrite.identityKey)
       // Make sure a validated certificate has been added 
-      if (!results || !results.certificate) {
-        return res.status(400).json({
-          status: 'error',
-          code: 'ERR_CERTIFICATE_NOT_VALID',
-          description: 'The identity certificate information has not been verified or is expired!'
-        })
-      }
+      // if (!results || !results.certificate) {
+      //   return res.status(400).json({
+      //     status: 'error',
+      //     code: 'ERR_CERTIFICATE_NOT_VALID',
+      //     description: 'The identity certificate information has not been verified or is expired!'
+      //   })
+      // }
 
       // Check encrypted fields and decrypt them
       const decryptedFields = await decryptCertificateFields(req.body, req.body.keyring, certifierPrivateKey)

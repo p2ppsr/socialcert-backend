@@ -1,8 +1,8 @@
 // const { MongoClient } = require('mongodb')
-const { saveVerificationProof } = require('../utils/databaseHelpers')
-const getPhotoDataAsBuffer = require('../utils/getPhotoDataAsBuffer')
-const { getVerificationInfo } = require('../utils/getVerificationInfo')
-const { publishFile } = require('nanostore-publisher')
+// const { saveVerificationProof } = require('../utils/databaseHelpers')
+// const getPhotoDataAsBuffer = require('../utils/getPhotoDataAsBuffer')
+// const { getVerificationInfo } = require('../utils/getVerificationInfo')
+// const { publishFile } = require('nanostore-publisher')
 
 const {
   NANOSTORE_URL,
@@ -90,9 +90,10 @@ module.exports = {
             })
           }
 
-          const userData = {userName: dataResponse.username, 
-          profilePhoto: `https://cdn.discordapp.com/avatars/${dataResponse.id}}/${dataResponse.avatar}.png`}
-
+          const userData = {
+            userName: dataResponse.username, 
+            profilePhoto: `https://cdn.discordapp.com/avatars/${dataResponse.id}}/${dataResponse.avatar}.png`
+          }
 
           return res.status(200).json({
             status: 'verified',
