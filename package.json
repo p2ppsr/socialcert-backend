@@ -22,10 +22,10 @@
     "url": "https://github.com/p2ppsr/discordcert-backend/issues"
   },
   "homepage": "https://github.com/p2ppsr/discordcert-backend#readme",
-
   "dependencies": {
     "authrite-express": "^0.3.23",
     "authrite-utils": "^0.2.20",
+    "axios": "^1.6.7",
     "babbage-bsv": "^0.2.4",
     "cryptononce": "^0.1.4",
     "dotenv": "^16.3.1",
@@ -38,5 +38,4 @@
     "pushdrop": "^0.1.32",
     "sendover": "^1.2.6"
   }
-
 }
