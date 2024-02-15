@@ -1,11 +1,11 @@
 {
-  "name": "IdentiCert",
+  "name": "DiscordCert",
   "babbage": {
     "trust": {
-      "name": "IdentiCert",
-      "note": "Certifies legal first and last name, and photos",
-      "icon": "https://staging-identicert.babbage.systems/favicon.ico",
-      "publicKey": "036dc48522aba1705afbb43df3c04dbd1da373b6154341a875bceaa2a3e7f21528"
+      "name": "DiscordCert",
+      "note": "Certifies discord username and profile photo",
+      "icon": "https://staging-discordcert.babbage.systems/favicon.ico", 
+      "publicKey": "02cf6cdf466951d8dfc9e7c9367511d0007ed6fba35ed42d425cc412fd6cfd4a17"
     }
   }
 }
