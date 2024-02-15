@@ -53,8 +53,6 @@ module.exports = {
         'Content-Type': 'application/x-www-form-urlencoded'
       };
 
-      res.send(data);
-
       if (!data){
         return res.status(400).json({
           status: 'notVerified',
