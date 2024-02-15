@@ -67,7 +67,7 @@ module.exports = {
         }
       })
 
-      //console.log("AUTH RESPONSE TAG", authResponse);
+      return res.send("AUTH RESPONSE TAG", authResponse);
 
       let access_token = authResponse.data.access_token;
       const dataResponse = await axios.get(`${DISCORD_API_ENDPOINT}/oauth2/@me`, { headers: { 'Authorization': `Bearer ${access_token}` } });
