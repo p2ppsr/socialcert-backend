@@ -62,7 +62,7 @@ module.exports = {
         })
       }
 
-      res.send(data);
+     return res.send(data);
 
       let authResponse = await axios.post(`${DISCORD_API_ENDPOINT}/oauth2/token`, data, {
         headers: headers,
