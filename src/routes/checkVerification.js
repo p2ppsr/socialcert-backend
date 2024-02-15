@@ -5,6 +5,7 @@
 // const { publishFile } = require('nanostore-publisher')
 const axios = require('axios')
 
+
 const {
   NANOSTORE_URL,
   SERVER_PRIVATE_KEY,
@@ -30,6 +31,7 @@ module.exports = {
   },
   func: async (req, res) => {
     try {
+
       if (!req.body.preVerifiedData || !req.body.preVerifiedData.accessCode || req.body.preVerifiedData === 'notVerified') {
         return res.status(400).json({
           status: 'notVerified',
@@ -37,6 +39,7 @@ module.exports = {
         })
       }
 
+      
 
       const data = new URLSearchParams({
         'grant_type': 'authorization_code',
@@ -44,9 +47,17 @@ module.exports = {
         'redirect_uri': REDIRECT_URI
       });
 
+
       const headers = {
         'Content-Type': 'application/x-www-form-urlencoded'
       };
+
+      if (!data){
+        return res.status(400).json({
+          status: 'notVerified',
+          description: 'User identity has not been verified!'
+        })
+      }
 
       let authResponse = await axios.post(`${DISCORD_API_ENDPOINT}/oauth2/token`, data, {
         headers: headers,
@@ -56,10 +67,10 @@ module.exports = {
         }
       })
 
+      //console.log("AUTH RESPONSE TAG", authResponse);
+
       let access_token = authResponse.data.access_token;
       const dataResponse = await axios.get(`${DISCORD_API_ENDPOINT}/oauth2/@me`, { headers: { 'Authorization': `Bearer ${access_token}` } });
-
-
 
 
       // Publish the profile photo to NanoStore
@@ -92,8 +103,8 @@ module.exports = {
       }
 
       const userData = {
-        userName: dataResponse.username,
-        profilePhoto: `https://cdn.discordapp.com/avatars/${dataResponse.id}}/${dataResponse.avatar}.png`
+        userName: dataResponse.data.user.username,
+        profilePhoto: `https://cdn.discordapp.com/avatars/${dataResponse.data.user.id}/${dataResponse.data.user.avatar}.png`
       }
 
       return res.status(200).json({

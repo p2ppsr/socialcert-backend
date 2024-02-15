@@ -143,11 +143,8 @@ module.exports = {
       })
 
       // Hmac the user data to tag for privacy
-      const firstNameHmac = crypto.createHmac('sha256', SERVER_PRIVATE_KEY)
-        .update(decryptedFields.firstName)
-        .digest('hex')
-      const lastNameHmac = crypto.createHmac('sha256', SERVER_PRIVATE_KEY)
-        .update(decryptedFields.lastName)
+      const userName = crypto.createHmac('sha256', SERVER_PRIVATE_KEY)
+        .update(decryptedFields.userName)
         .digest('hex')
       const subjectHmac = crypto.createHmac('sha256', SERVER_PRIVATE_KEY)
         .update(req.body.subject)
@@ -158,7 +155,7 @@ module.exports = {
         outputs: [{
           satoshis: 500,
           script: lockingScript,
-          tags: [`firstName ${firstNameHmac}`, `lastName ${lastNameHmac}`, `subject ${subjectHmac}`],
+          tags: [`userName ${userName}`, `subject ${subjectHmac}`],
           customInstructions: JSON.stringify({
             derivationPrefix,
             derivationSuffix

@@ -35,7 +35,7 @@ app.use((req, res, next) => {
   }
 })
 
-// This ensures that HTTPS is used unless you are in development mode
+//This ensures that HTTPS is used unless you are in development mode
 app.use((req, res, next) => {
   if (
     !req.secure &&
@@ -64,7 +64,7 @@ app.use((req, res, next) => {
   next()
 })
 
-// Authrite is enforced from here forward
+//Authrite is enforced from here forward
 app.use(authrite.middleware({
   serverPrivateKey: process.env.SERVER_PRIVATE_KEY,
   baseUrl: process.env.HOSTING_DOMAIN

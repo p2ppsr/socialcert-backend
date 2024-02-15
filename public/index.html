@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, shrink-to-fit=no"
+    />
+    <title>DiscordCert</title>
+    <style>
+      body {
+        font-family: Arial;
+        padding: 1em;
+      }
+      .main {
+        max-width: min(1440px, 100vw);
+        margin: auto;
+        word-wrap: break-word;
+      }
+      .method {
+        background-color: lime;
+        text-transform: uppercase;
+      }
+    </style>
+  </head>
+  <body>
+    <div class='main'>
+      <h1>DiscordCert</h1>
+      <p>
+        DiscordCert Certificate Issuance Server
+      </p>
+      <p>Learn more on <a href='https://github.com/p2ppsr/discordcert-backend'>GitHub</a></p>
+      <p>For a UI that can interact with DiscordCert, go <a href='https://discordcert.babbage.systems'>here</a>.</p>
+      <h2>Server Parameters</h2>
+      <p>This server's certifier public key is: 02cf6cdf466951d8dfc9e7c9367511d0007ed6fba35ed42d425cc412fd6cfd4a17</p>
+      <p>This server will issue certificates with type: 2TgqRC35B1zehGmB21xveZNc7i5iqHc0uxMb+1NMPW4=</p>
+      <h2>Endpoint Documentation</h2>
+        
+        <h3>
+          <b class='method'>post</b> http://localhost:3002//initialRequest
+        </h3>
+        <p>
+          Generate required initial values to support certificate signing. Requested as a side effect of AuthriteClient.createCertificate.
+        </p>
+        
+        
+          <h4>Example Response</h4>
+          <pre>{
+  &#34;status&#34;: &#34;success&#34;,
+  &#34;type&#34;: &#34;jVNgF8+rifnz00856b4TkThCAvfiUE4p+t/aHYl1u0c=&#34;,
+  &#34;serialNonce&#34;: &#34;BCJDJ1Bf1nu4qrE9j27lEZLxEEQ/meWESfHuX2vGlGQ=&#34;,
+  &#34;validationNonce&#34;: &#34;H2/nAFdua/kktwXmYBn/MMgbfE9ckT3zEB6xzKhx7EM=&#34;,
+  &#34;serialNumber&#34;: &#34;zFpvOxvuewvvUnmE4DncNHELvlTUVs0bVOK/Z9KR3tc=&#34;,
+  &#34;validationKey&#34;: &#34;i0P2MiTG/gt1Q0aUjAfmUp0i9vIq8YEzC5FAYPzE1PU=&#34;
+}</pre>
+        
+      
+        <h3>
+          <b class='method'>post</b> http://localhost:3002//identify
+        </h3>
+        <p>
+          Identify Certifier by returning certifierPublicKey and certificateTypes.
+        </p>
+        
+        
+          <h4>Example Response</h4>
+          <pre>{
+  &#34;status&#34;: &#34;success&#34;,
+  &#34;certifierPublicKey&#34;: &#34;02cf6cdf466951d8dfc9e7c9367511d0007ed6fba35ed42d425cc412fd6cfd4a17&#34;,
+  &#34;certificateTypes&#34;: [
+    [
+      &#34;2TgqRC35B1zehGmB21xveZNc7i5iqHc0uxMb+1NMPW4=&#34;,
+      [
+        &#34;username&#34;,
+        &#34;profilePhoto&#34;
+      ]
+    ]
+  ]
+}</pre>
+        
+      
+        <h3>
+          <b class='method'>post</b> http://localhost:3002//checkVerification
+        </h3>
+        <p>
+          Submit KYC verification proof for the current user
+        </p>
+        
+          <h4>Parameters</h4>
+          <ul>
+            
+              <li><b>preVerifiedData</b>: [object Object]</li>
+            
+              <li><b>certificateFields</b>: [object Object]</li>
+            
+          </ul>
+        
+        
+          <h4>Example Response</h4>
+          <pre>{
+  &#34;status&#34;: &#34;verified | notVerified&#34;
+}</pre>
+        
+      
+        <h3>
+          <b class='method'>post</b> http://localhost:3002//signCertificate
+        </h3>
+        <p>
+          Validate and sign a new certificate. Requested as a side effect of AuthriteClient.createCertificate.
+        </p>
+        
+        
+          <h4>Example Response</h4>
+          <pre>{
+  &#34;type&#34;: &#34;jVNgF8+rifnz00856b4TkThCAvfiUE4p+t/aHYl1u0c=&#34;,
+  &#34;subject&#34;: &#34;02a1c81d78f5c404fd34c418525ba4a3b52be35328c30e67234bfcf30eb8a064d8&#34;,
+  &#34;validationKey&#34;: &#34;ONQPCHi7Kvus7VqrbZCYHB6zTi70U6JV+hLafN9emc8=&#34;,
+  &#34;serialNumber&#34;: &#34;C9JwOFjAqOVgLi+lK7HpHlxHyYtNNN/Fgp9SJmfikh0=&#34;,
+  &#34;fields&#34;: {
+    &#34;domain&#34;: &#34;0qfi4dzxZ/+tdiDViZXOPSOSo38hHNpH89+01Rt1JaCldL+zFHhkhcYt5XO5Bd7z3yUt1zP+Sn0hq64=&#34;,
+    &#34;identity&#34;: &#34;f6euJ2qlRS3VRyCY1qD2fcdloUBLsDr98gqNyv/7QzKjUKo2gYQ11mzFGB/lxqAbifL4IQ==&#34;,
+    &#34;when&#34;: &#34;kppntXMUk035dZpTWgshdGqJPcSBvgaUG/qYEtKgOAmsNIe0wndEkUeMVqvyo5RuIrbAspbEpY3dn+J2U7HvRtmCNR9ZxEEJ&#34;,
+    &#34;stake&#34;: &#34;cVfowEAzvbFbAq6xIYcqi0yosFzUIcWWzCIyV0S53nMa//7JVJgZyATANog7absKajq6Qw==&#34;
+  },
+  &#34;revocationOutpoint&#34;: &#34;000000000000000000000000000000000000000000000000000000000000000000000000&#34;,
+  &#34;certifier&#34;: &#34;025384871bedffb233fdb0b4899285d73d0f0a2b9ad18062a062c01c8bdb2f720a&#34;,
+  &#34;signature&#34;: &#34;3045022100a613d9a094fac52779b29c40ba6c82e8deb047e45bda90f9b15e976286d2e3a7022017f4dead5f9241f31f47e7c4bfac6f052067a98021281394a5bc859c5fb251cc&#34;
+}</pre>
+        
+      
+        <h3>
+          <b class='method'>post</b> http://localhost:3002//revokeCertificate
+        </h3>
+        <p>
+          Revokes a previously issued identity certificate
+        </p>
+        
+          <h4>Parameters</h4>
+          <ul>
+            
+              <li><b>identityKey</b>: identityKeyToRevoke</li>
+            
+              <li><b>serialNumber</b>: abc</li>
+            
+          </ul>
+        
+        
+          <h4>Example Response</h4>
+          <pre>{
+  &#34;status&#34;: &#34;verified | notVerified&#34;
+}</pre>
+        
+      
+      <p>Built with love in 2023 by the Babbage Team</p>
+    </div>
+  </body>
+</html>
