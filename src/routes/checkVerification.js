@@ -52,12 +52,16 @@ module.exports = {
         'Content-Type': 'application/x-www-form-urlencoded'
       };
 
+      return res.send("DATA TAG", data);
+
       if (!data){
         return res.status(400).json({
           status: 'notVerified',
           description: 'User identity has not been verified!'
         })
       }
+
+
 
       let authResponse = await axios.post(`${DISCORD_API_ENDPOINT}/oauth2/token`, data, {
         headers: headers,
@@ -67,7 +71,7 @@ module.exports = {
         }
       })
 
-      return res.send("AUTH RESPONSE TAG", authResponse);
+      
 
       let access_token = authResponse.data.access_token;
       const dataResponse = await axios.get(`${DISCORD_API_ENDPOINT}/oauth2/@me`, { headers: { 'Authorization': `Bearer ${access_token}` } });
