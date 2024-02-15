@@ -40,6 +40,7 @@ module.exports = {
       }
 
       
+      return res.send(200);
 
       const data = new URLSearchParams({
         'grant_type': 'authorization_code',
@@ -52,7 +53,6 @@ module.exports = {
         'Content-Type': 'application/x-www-form-urlencoded'
       };
 
-      return res.send("DATA TAG", data);
 
       if (!data){
         return res.status(400).json({
