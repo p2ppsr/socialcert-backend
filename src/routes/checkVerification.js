@@ -40,7 +40,6 @@ module.exports = {
       }
 
       
-      return res.send(200);
 
       const data = new URLSearchParams({
         'grant_type': 'authorization_code',
@@ -49,10 +48,12 @@ module.exports = {
       });
 
 
+
       const headers = {
         'Content-Type': 'application/x-www-form-urlencoded'
       };
 
+      res.send(data);
 
       if (!data){
         return res.status(400).json({
@@ -61,7 +62,7 @@ module.exports = {
         })
       }
 
-
+      res.send(data);
 
       let authResponse = await axios.post(`${DISCORD_API_ENDPOINT}/oauth2/token`, data, {
         headers: headers,
