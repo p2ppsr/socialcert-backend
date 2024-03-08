@@ -5,7 +5,7 @@ const {
 } = process.env
 
 let mongoClient
-const DB_NAME = `${NODE_ENV}_discordcert`
+const DB_NAME = `staging_discordcert` // TODO change back to NODE_ENV
 
 async function connectToMongoDB () {
   if (!mongoClient) {
@@ -27,7 +27,6 @@ async function getMongoClient () {
   return mongoClient
 }
 
-// unsure what identityKey is
 const saveCertificate = async (identityKey, certificate, tx, derivationPrefix, derivationSuffix) => {
   const mongoClient = await getMongoClient()
 

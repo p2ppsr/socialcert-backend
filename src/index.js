@@ -85,9 +85,9 @@ app.use((req, res) => {
   })
 })
 
-// This starts discordcert server listening for requests
+// This starts socialcert server listening for requests
 app.listen(HTTP_PORT, () => {
-  console.log('discordcert listening on port', HTTP_PORT)
+  console.log('socialcert listening on port', HTTP_PORT)
   console.log(
     'Certifier:',
     bsv.PrivateKey
@@ -95,7 +95,7 @@ app.listen(HTTP_PORT, () => {
       .publicKey.toString()
   )
   console.log(
-    'discordcert server configured for type:',
+    'socialcert server configured for type:',
     process.env.CERTIFICATE_TYPE_ID
   )
 })

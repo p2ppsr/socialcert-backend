@@ -1,7 +1,7 @@
 {
-  "name": "discordcert-backend",
+  "name": "socialcert-backend",
   "version": "1.0.0",
-  "description": "Provides a signed certificate for a users discord account info",
+  "description": "Provides a signed certificate for an array of social media applications",
   "main": "index.js",
   "devDependencies": {
     "ejs": "^3.1.9",
