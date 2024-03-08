@@ -8,7 +8,7 @@ env:
   CURRENT_BRANCH: ${{ github.ref_name =='production' && 'production' || 'master' }}
   GCR_HOST: us.gcr.io
   GOOGLE_PROJECT_ID: computing-with-integrity
-  GCR_IMAGE_NAME: discordcert-backend
+  GCR_IMAGE_NAME: socialcert-backend
 jobs:
   build:
     name: Deploy
@@ -28,7 +28,7 @@ jobs:
         run: "./scripts/mkenv.sh service.${{ env.CURRENT_BRANCH }}.yaml"
         env:
           IMAGE: "${{ env.GCR_HOST }}/${{ env.GOOGLE_PROJECT_ID }}/${{ env.GCR_IMAGE_NAME }}:${{ env.CURRENT_BRANCH }}-${{ github.sha }}"
-          SERVICE: ${{ env.CURRENT_BRANCH =='production' && 'prod-discordcert' || 'staging-discordcert' }}
+          SERVICE: ${{ env.CURRENT_BRANCH =='production' && 'prod-socialcert-backend' || 'staging-socialcert-backend' }}
           NODE_ENV: ${{ env.CURRENT_BRANCH == 'production' && 'production' || 'staging' }}
           SERVER_PRIVATE_KEY: ${{ env.CURRENT_BRANCH == 'production' && secrets.PROD_SERVER_PRIVATE_KEY || secrets.STAGING_SERVER_PRIVATE_KEY }}
           HOSTING_DOMAIN: ${{ env.CURRENT_BRANCH == 'production' && secrets.PROD_HOSTING_DOMAIN || secrets.STAGING_HOSTING_DOMAIN }}

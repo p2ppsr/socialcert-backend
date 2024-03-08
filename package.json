@@ -1,7 +1,7 @@
 {
   "name": "socialcert-backend",
-  "version": "1.0.0",
-  "description": "Provides a signed certificate for an array of social media applications",
+  "version": "0.1.0",
+  "description": "Provides a signed certificate for an array of social platforms, email, and phone.",
   "main": "index.js",
   "devDependencies": {
     "ejs": "^3.1.9",
@@ -14,14 +14,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/p2ppsr/discordcert-backend.git"
+    "url": "git+https://github.com/p2ppsr/socialcert-backend.git"
   },
   "author": "Peer-to-peer Privacy Systems Research, LLC",
   "license": "PROPRIETARY",
   "bugs": {
-    "url": "https://github.com/p2ppsr/discordcert-backend/issues"
+    "url": "https://github.com/p2ppsr/socialcert-backend/issues"
   },
-  "homepage": "https://github.com/p2ppsr/discordcert-backend#readme",
+  "homepage": "https://github.com/p2ppsr/socialcert-backend#readme",
   "dependencies": {
     "authrite-express": "^0.3.23",
     "authrite-utils": "^0.2.20",

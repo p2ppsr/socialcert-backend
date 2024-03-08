@@ -1,14 +1,14 @@
-# DiscordCert Backend
+# SocialCert Backend
 
-DiscordCert Key Registry Certificate Issuance Server
+SocialCert Key Registry Certificate Issuance Server
 
-A Stageline ("discordcert") deployment of the master branch of this repository is available at [https://staging-discordcert.babbage.systems](https://staging-discordcert.babbage.systems)
+A Stageline ("socialcert") deployment of the master branch of this repository is available at [https://staging-backend.socialcert.net](https://staging-backend.socialcert.net)
 
-Having a DiscordCert certificate allows you to register your MetaNet Identity with the key registry.
+Having a SocialCert certificate allows you to register your MetaNet Identity with the key registry.
 
-[UI for interacting with DiscordCert](https://github.com/p2ppsr/discordcert-ui) as well.
+[UI for interacting with SocialCert](https://github.com/p2ppsr/socialcert-ui) as well.
 
-## The DiscordCert Certificate
+## The SocialCert Certificate
 
 ## License & Confidentiality
 
