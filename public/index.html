@@ -6,7 +6,7 @@
       name="viewport"
       content="width=device-width, initial-scale=1, shrink-to-fit=no"
     />
-    <title>SocialCert</title>
+    <title>DiscordCert</title>
     <style>
       body {
         font-family: Arial;
@@ -25,19 +25,19 @@
   </head>
   <body>
     <div class='main'>
-      <h1>SocialCert</h1>
+      <h1>DiscordCert</h1>
       <p>
-        SocialCert Certificate Issuance Server
+        DiscordCert Certificate Issuance Server
       </p>
-      <p>Learn more on <a href='https://github.com/p2ppsr/socialcert-backend'>GitHub</a></p>
-      <p>For a UI that can interact with SocialCert, go <a href='https://socialcert.net'>here</a>.</p>
+      <p>Learn more on <a href='https://github.com/p2ppsr/discordcert-backend'>GitHub</a></p>
+      <p>For a UI that can interact with DiscordCert, go <a href='https://discordcert.babbage.systems'>here</a>.</p>
       <h2>Server Parameters</h2>
       <p>This server's certifier public key is: 02cf6cdf466951d8dfc9e7c9367511d0007ed6fba35ed42d425cc412fd6cfd4a17</p>
       <p>This server will issue certificates with type: 2TgqRC35B1zehGmB21xveZNc7i5iqHc0uxMb+1NMPW4=</p>
       <h2>Endpoint Documentation</h2>
         
         <h3>
-          <b class='method'>post</b> http://localhost:3002//initialRequest
+          <b class='method'>post</b> http://localhost:3002/initialRequest
         </h3>
         <p>
           Generate required initial values to support certificate signing. Requested as a side effect of AuthriteClient.createCertificate.
@@ -56,7 +56,7 @@
         
       
         <h3>
-          <b class='method'>post</b> http://localhost:3002//identify
+          <b class='method'>post</b> http://localhost:3002/identify
         </h3>
         <p>
           Identify Certifier by returning certifierPublicKey and certificateTypes.
@@ -71,7 +71,7 @@
     [
       &#34;2TgqRC35B1zehGmB21xveZNc7i5iqHc0uxMb+1NMPW4=&#34;,
       [
-        &#34;username&#34;,
+        &#34;userName&#34;,
         &#34;profilePhoto&#34;
       ]
     ]
@@ -80,7 +80,7 @@
         
       
         <h3>
-          <b class='method'>post</b> http://localhost:3002//checkVerification
+          <b class='method'>post</b> http://localhost:3002/checkVerification
         </h3>
         <p>
           Submit KYC verification proof for the current user
@@ -103,7 +103,7 @@
         
       
         <h3>
-          <b class='method'>post</b> http://localhost:3002//signCertificate
+          <b class='method'>post</b> http://localhost:3002/signCertificate
         </h3>
         <p>
           Validate and sign a new certificate. Requested as a side effect of AuthriteClient.createCertificate.
@@ -129,7 +129,7 @@
         
       
         <h3>
-          <b class='method'>post</b> http://localhost:3002//revokeCertificate
+          <b class='method'>post</b> http://localhost:3002/revokeCertificate
         </h3>
         <p>
           Revokes a previously issued identity certificate
