@@ -2,6 +2,7 @@ require('dotenv').config()
 const bsv = require('babbage-bsv')
 
 const discordcert = require('./certificates/discordcert')
+// const phonecert = require('./certificates/phonecert')
 
 const certifierPrivateKey = process.env.SERVER_PRIVATE_KEY
 const certifierPublicKey = new bsv.PrivateKey(certifierPrivateKey).publicKey.toString('hex')
@@ -15,8 +16,11 @@ const requestedTypesAndFields = Object.fromEntries([[discordcert.certificateType
 module.exports = {
   certifierPrivateKey,
   certifierPublicKey,
-  certificateType: discordcert.certificateType,
-  certificateDefinition: discordcert.certificateDefinition,
-  certificateFields: discordcert.certificateFields,
+  certificateTypes: {
+    [discordcert.certificateType]: {
+      definition: discordcert.certificateDefinition,
+      fields: discordcert.certificateFields
+    }
+  },
   requestedTypesAndFields
 }
