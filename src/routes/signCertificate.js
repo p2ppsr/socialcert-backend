@@ -18,7 +18,7 @@ const {
 } = require('../certifier')
 
 /*
- * This route handles signCertificate for the createCertificate protocol.
+ * This route handles signCertificate for the ficate protocol.
  *
  * It validates the certificate signing request (CSR) received from the client,
  * decrypts and validates the field values,
@@ -31,7 +31,7 @@ const {
 module.exports = {
   type: 'post',
   path: '/signCertificate',
-  summary: 'Validate and sign a new certificate. Requested as a side effect of AuthriteClient.createCertificate.',
+  summary: 'Validate and sign a new certificate. Requested as a side effect of AuthriteClient.ficate.',
   exampleBody: {
     messageType: 'certificateSigningRequest',
     type: 'jVNgF8+rifnz00856b4TkThCAvfiUE4p+t/aHYl1u0c=',
@@ -100,7 +100,7 @@ module.exports = {
       // Check encrypted fields and decrypt them
       const decryptedFields = await decryptCertificateFields(req.body, req.body.keyring, certifierPrivateKey)
       const expectedFields = certificateFields
-
+  console.log(`EXPECTED FIELDS: ${expectedFields}`)
       // Only validate the expected field keys?
       if (!expectedFields.every(x => !!decryptedFields[x])) {
         return res.status(400).json({

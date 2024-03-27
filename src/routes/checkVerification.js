@@ -34,7 +34,7 @@ module.exports = {
   func: async (req, res) => {
     try {
 
-      if (!req.body.preVerifiedData || !req.body.preVerifiedData.accessCode || req.body.preVerifiedData === 'notVerified') {
+      if (!req.body.preVerifiedData || req.body.preVerifiedData === 'notVerified') {
         return res.status(400).json({
           status: 'notVerified',
           description: 'User identity has not been verified!'
@@ -43,6 +43,11 @@ module.exports = {
 
       if(req.body.preVerifiedData.verificationType == "Discord"){
           userData = await getUserDiscordData(req.body.preVerifiedData.accessCode);
+      }
+
+      else if(req.body.preVerifiedData.verificationType == "phoneNumber"){
+        userData = req.body.preVerifiedData.phoneNumber
+        console.log(`CONSOLE LOGGING userData: ${userData}`)
       }
 
       return res.status(200).json({
