@@ -36,6 +36,7 @@
     "ninja-base": "^0.3.18",
     "prettyjson": "^1.2.1",
     "pushdrop": "^0.1.42",
-    "sendover": "^1.3.13"
+    "sendover": "^1.3.13",
+    "twilio": "^5.0.2"
   }
 }
