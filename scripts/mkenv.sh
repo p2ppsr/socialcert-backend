@@ -27,7 +27,10 @@ perl -E'
     DISCORD_API_ENDPOINT \
     DISCORD_CLIENT_ID \
     DISCORD_CLIENT_SECRET \
-    REDIRECT_URI >> $1
+    REDIRECT_URI \
+    TWILIO_ACCOUNT_SID \
+    TWILIO_AUTH_TOKEN \
+    TWILIO_SERVICE_SID >> $1
 
 echo "Built! Contents of $1:"
 cat $1
