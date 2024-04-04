@@ -20,6 +20,7 @@ const {
     'grant_type': 'authorization_code',
     'code': accessCode,
     'redirect_uri': REDIRECT_URI
+    
   });
 
   const headers = {
@@ -32,16 +33,16 @@ const {
       description: 'User identity has not been verified!'
     })
   }
-
+  
   let authResponse = await axios.post(`${DISCORD_API_ENDPOINT}/oauth2/token`, data, {
     headers: headers,
     auth: {
       username: DISCORD_CLIENT_ID,
       password: DISCORD_CLIENT_SECRET
     }
+    
   })
 
-  
 
   let access_token = authResponse.data.access_token;
 

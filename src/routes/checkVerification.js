@@ -16,6 +16,7 @@ const {
   REDIRECT_URI
 } = process.env
 let userData
+let verificationType
 
 
 module.exports = {
@@ -41,13 +42,14 @@ module.exports = {
         })
       }
 
+      verificationType = req.body.preVerifiedData.verificationType
+
       if(req.body.preVerifiedData.verificationType == "Discord"){
           userData = await getUserDiscordData(req.body.preVerifiedData.accessCode);
       }
 
       else if(req.body.preVerifiedData.verificationType == "phoneNumber"){
-        userData = req.body.preVerifiedData.phoneNumber
-        console.log(`CONSOLE LOGGING userData: ${userData}`)
+        userData = {phoneNumber: req.body.preVerifiedData.phoneNumber}
       }
 
       return res.status(200).json({
@@ -65,5 +67,6 @@ module.exports = {
         description: 'An internal error has occurred.'
       })
     }
-  }
-}
+  },
+  verificationType: verificationType
+};

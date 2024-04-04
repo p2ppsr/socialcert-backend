@@ -13,6 +13,7 @@ const {
 
 const {
   certifierPrivateKey,
+  certificateTypes, // Array of all certifacte types and they're corresponding defintion and fields
   certificateType,
   certificateFields
 } = require('../certifier')
@@ -70,17 +71,17 @@ module.exports = {
   },
   func: async (req, res) => {
     try {
-      const checkError = certifierSignCheckArgs({
-        ...req.body,
-        certifierPrivateKey,
-        certificateType
-      })
-      if (checkError) {
-        return res.status(400).json({
-          status: 'error',
-          ...checkError
-        })
-      }
+      // const checkError = certifierSignCheckArgs({
+      //   ...req.body,
+      //   certifierPrivateKey,
+      //   certificateType
+      // })
+      // if (checkError) {
+      //   return res.status(400).json({
+      //     status: 'error',
+      //     ...checkError
+      //   })
+      //}
 
       // Save the sender's identityKey as the subject of the certificate
       req.body.subject = req.authrite.identityKey
@@ -99,7 +100,15 @@ module.exports = {
 
       // Check encrypted fields and decrypt them
       const decryptedFields = await decryptCertificateFields(req.body, req.body.keyring, certifierPrivateKey)
-      const expectedFields = certificateFields
+      let selectedCertificate = certificateTypes[req.body.type];
+      if(!selectedCertificate){
+        return res.stats(400).json({
+          status: 'error',
+          code: 'ERR_CERT_TYPE',
+          description: 'Selected certificate is not in certifacteTypes'
+        })
+      }
+      const expectedFields = selectedCertificate.fields
   console.log(`EXPECTED FIELDS: ${expectedFields}`)
       // Only validate the expected field keys?
       if (!expectedFields.every(x => !!decryptedFields[x])) {
@@ -143,39 +152,42 @@ module.exports = {
       })
 
       // Hmac the user data to tag for privacy
-      const userName = crypto.createHmac('sha256', SERVER_PRIVATE_KEY)
-        .update(decryptedFields.userName)
+     const fieldKey =Object.keys(decryptedFields)[0]
+      const fieldValue = crypto.createHmac('sha256', SERVER_PRIVATE_KEY) 
+        .update(Object.values(decryptedFields)[0])                            
         .digest('hex')
       const subjectHmac = crypto.createHmac('sha256', SERVER_PRIVATE_KEY)
         .update(req.body.subject)
         .digest('hex')
-
+      
       // Create a new Bitcoin transaction
       const tx = await ninja.getTransactionWithOutputs({
         outputs: [{
           satoshis: 500,
           script: lockingScript,
-          tags: [`userName ${userName}`, `subject ${subjectHmac}`],
+          tags: [`${fieldKey} ${fieldValue}`, `subject ${subjectHmac}`],
           customInstructions: JSON.stringify({
             derivationPrefix,
             derivationSuffix
           })
         }],
         labels: [
-          'discordcert'
+          'SocialCert'
         ],
-        note: 'Discordcert Certificate Issuance',
+        note: 'SocialCert Certificate Issuance',
         autoProcess: true
       })
 
       // Set the revocation outpoint for this certificate
       const revocationOutpoint = tx.txid + '00000000'
-
+      console.log(`REQ.BODY.TYPE ${req.body.type}`)
+      console.log(`VREVOCATION OUT POINT: ${revocationOutpoint}`)
+      console.log(`CERTIFIER PRIVATE KEY: ${certifierPrivateKey}`)
       const certificate = certifierCreateSignedCertificate({
         ...req.body,
         revocationOutpoint,
         certifierPrivateKey,
-        certificateType
+        certificateType: req.body.type
       })
 
       // Save certificate data and revocation key derivation information

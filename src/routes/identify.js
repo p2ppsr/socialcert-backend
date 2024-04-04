@@ -1,7 +1,6 @@
 const {
+  certificateTypes,
   certifierPublicKey,
-  certificateType,
-  certificateFields
 } = require('../certifier')
 
 /*
@@ -14,16 +13,14 @@ module.exports = {
   exampleResponse: {
     status: 'success',
     certifierPublicKey,
-    certificateTypes: [
-      [certificateType, certificateFields]
-    ]
+    certificateTypes
   },
   func: async (req, res) => {
     try {
       return res.status(200).json({
         status: 'success',
         certifierPublicKey,
-        certificateTypes: [[certificateType, certificateFields]]
+        certificateTypes
       })
     } catch (e) {
       console.error(e)
