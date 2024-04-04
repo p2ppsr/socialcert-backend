@@ -5,7 +5,7 @@ const {
 } = process.env
 
 let mongoClient
-const DB_NAME = `staging_discordcert` // TODO change back to NODE_ENV
+const DB_NAME = `${NODE_ENV}_socialcert` 
 
 async function connectToMongoDB () {
   if (!mongoClient) {
