@@ -1,6 +1,6 @@
 {
   "name": "socialcert-backend",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "description": "Provides a signed certificate for an array of social platforms, email, and phone.",
   "main": "index.js",
   "devDependencies": {
