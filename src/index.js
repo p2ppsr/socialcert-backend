@@ -64,7 +64,7 @@ app.use((req, res, next) => {
   next()
 })
 
-//Authrite is enforced from here forward
+//Authrite is enforced from here forward TODO: PUT THIS BACK IN
 app.use(authrite.middleware({
   serverPrivateKey: process.env.SERVER_PRIVATE_KEY,
   baseUrl: process.env.HOSTING_DOMAIN
