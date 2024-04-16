@@ -3,6 +3,7 @@ const bsv = require('babbage-bsv')
 
 const discordcert = require('./certificates/discordcert')
 const phoneverification = require('./certificates/phoneverification')
+const xcert = require('./certificates/xcert')
 const verificationType = require('./routes/checkVerification')
 
 const certifierPrivateKey = process.env.SERVER_PRIVATE_KEY
@@ -14,7 +15,6 @@ const certifierPublicKey = new bsv.PrivateKey(certifierPrivateKey).publicKey.toS
 
 
 
-const requestedTypesAndFields = Object.fromEntries([[discordcert.certificateType, discordcert.certificateFields]])
 
 module.exports = {
   certifierPrivateKey,
@@ -27,10 +27,11 @@ module.exports = {
     [phoneverification.certificateType]:{
       definition: phoneverification.certificateDefinition,
       fields: phoneverification.certificateFields
-    }
+    },
+    [xcert.certificateType]:{
+      definition: xcert.certificateDefinition,
+      fields: xcert.certificateFields
+    },
   },
-  // certificateType: discordcert.certificateType,
-  // certificateDefinition: discordcert.certificateDefinition,
-  // certificateFields: discordcert.certificateFields,
-  // requestedTypesAndFields
+  
 }

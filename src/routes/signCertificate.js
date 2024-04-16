@@ -99,6 +99,7 @@ module.exports = {
       // }
 
       // Check encrypted fields and decrypt them
+      console.log(`REQ BODY TYPE: ${req.body.type}`)
       const decryptedFields = await decryptCertificateFields(req.body, req.body.keyring, certifierPrivateKey)
       let selectedCertificate = certificateTypes[req.body.type];
       if(!selectedCertificate){

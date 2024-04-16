@@ -52,6 +52,10 @@ module.exports = {
         userData = {phoneNumber: req.body.preVerifiedData.phoneNumber}
       }
 
+      else if(req.body.preVerifiedData.verificationType == "X"){
+        userData = {userName: req.body.preVerifiedData.XData.userName, profilePhoto: req.body.preVerifiedData.XData.profilePhoto}
+      }
+
       return res.status(200).json({
         status: 'verified',
         description: 'User identity is verified!',
