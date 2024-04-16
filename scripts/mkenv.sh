@@ -30,7 +30,9 @@ perl -E'
     REDIRECT_URI \
     TWILIO_ACCOUNT_SID \
     TWILIO_AUTH_TOKEN \
-    TWILIO_SERVICE_SID >> $1
+    TWILIO_SERVICE_SID \
+    X_API_KEY \
+    X_API_SECRET >> $1
 
 echo "Built! Contents of $1:"
 cat $1
