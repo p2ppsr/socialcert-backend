@@ -2,8 +2,11 @@ require('dotenv').config()
 const OAuth = require('oauth-1.0a')
 const crypto = require('crypto')
 const axios = require('axios')
-const oauthConsumerKey = process.env.X_API_KEY
-const consumerSecret = process.env.X_API_SECRET
+const {
+  X_API_KEY: oauthConsumerKey,
+  X_REDIRECT_URI: callbackURL,
+  X_API_SECRET: consumerSecret
+} = process.env
 let requestTokenSecret
 
 const oauth = OAuth({
@@ -40,10 +43,9 @@ async function initialRequest (req, res) {
 // Generate a random nonce and current timestamp
   const oauthNonce = crypto.randomBytes(16).toString('hex')
   const oauthTimestamp = Math.floor(Date.now() / 1000)
-
   // Set up additional OAuth parameters
   const additionalParams = {
-    oauth_callback: 'http://localhost:8088/XVerification'
+    oauth_callback: callbackURL
   }
 
   // Generate OAuth headers
@@ -87,8 +89,8 @@ async function initialRequest (req, res) {
 async function exchangeAccessToken (req, res) {
   try {
     // OAuth data
-    oauthToken = req.body.oauthToken
-    oauthVerifier = req.body.oauthVerifier
+    const oauthToken = req.body.oauthToken
+    const oauthVerifier = req.body.oauthVerifier
 
     const requestData = {
       url: 'https://api.twitter.com/oauth/access_token',
