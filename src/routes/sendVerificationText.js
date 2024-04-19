@@ -1,9 +1,9 @@
-require('dotenv').config();
-const accountSid = process.env.TWILIO_ACCOUNT_SID;
-const authToken = process.env.TWILIO_AUTH_TOKEN;
-const serviceSid = process.env.TWILIO_SERVICE_SID;
-const client = require('twilio')(accountSid, authToken);
-const verificationCode = Math.floor(100000 + Math.random() * 900000);
+require('dotenv').config()
+const accountSid = process.env.TWILIO_ACCOUNT_SID
+const authToken = process.env.TWILIO_AUTH_TOKEN
+const serviceSid = process.env.TWILIO_SERVICE_SID
+const client = require('twilio')(accountSid, authToken)
+const verificationCode = Math.floor(100000 + Math.random() * 900000)
 
 module.exports = {
   type: 'post',
@@ -19,54 +19,46 @@ module.exports = {
     status: 'verified | notVerified'
   },
   func: async (req, res) => {
-    if (req.body.funcAction == "sendText") {
-      console.log("INSIDE SEND TEXT IF STATEMENT")
+    if (req.body.funcAction == 'sendText') {
+      console.log('INSIDE SEND TEXT IF STATEMENT')
       sendTextFunc(req, res)
-    }
-
-    else if (req.body.funcAction == "verifyCode") {
+    } else if (req.body.funcAction == 'verifyCode') {
       verifyCodeFunc(req, res)
     }
-
   }
 }
 
-async function sendTextFunc(req, res) {
+async function sendTextFunc (req, res) {
   try {
-    const phoneNumber = req.body.phoneNumber;
-    const textSent = req.body.textSent;
+    const phoneNumber = req.body.phoneNumber
     client.verify.v2.services(serviceSid)
       .verifications
-      .create({ to: phoneNumber, channel: 'sms', code: verificationCode, }) // TODO: Double check that this is actually sending random code
+      .create({ to: phoneNumber, channel: 'sms', code: verificationCode }) // TODO: Double check that this is actually sending random code
     return res.status(200).json({
       textSentStatus: true,
       textSentPhonenumber: phoneNumber
     })
-
   } catch (e) {
     console.error(e)
     res.status(500).json({
       textSentStatus: false,
-      code: "ERR_INTERNAL"
+      code: 'ERR_INTERNAL'
     })
   }
 }
 
-async function verifyCodeFunc(req, res) {
+async function verifyCodeFunc (req, res) {
   try {
-
     client.verify.v2.services(serviceSid)
       .verificationChecks
       .create({ to: req.body.phoneNumber, code: req.body.verificationCode })
       .then(verificationCheck => {
         if (verificationCheck.status === 'approved') {
-          console.log('Verification successful!')
           return res.status(200).json({
-            verificationStatus: true,
-            verifiedPhonenumber: req.body.phoneNumber
+            verifiedPhonenumber: req.body.phoneNumber,
+            verificationStatus: true
           })
         } else {
-          console.log('Verification failed.')
           return res.status(200).json({
             verificationStatus: false
           })
@@ -75,7 +67,7 @@ async function verifyCodeFunc(req, res) {
   } catch (e) {
     console.error(e)
     res.status(500).json({
-      code: "Error trying to verify text code"
+      code: 'Error trying to verify text code'
     })
   }
 }

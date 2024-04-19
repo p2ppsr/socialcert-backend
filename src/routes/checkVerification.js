@@ -1,5 +1,5 @@
- const { MongoClient } = require('mongodb')
- const { saveVerificationProof } = require('../utils/databaseHelpers')
+const { MongoClient } = require('mongodb')
+const { saveVerificationProof } = require('../utils/databaseHelpers')
 // const getPhotoDataAsBuffer = require('../utils/getPhotoDataAsBuffer')
 // const { getVerificationInfo } = require('../utils/getVerificationInfo')
 // const { publishFile } = require('nanostore-publisher')
@@ -18,7 +18,6 @@ const {
 let userData
 let verificationType
 
-
 module.exports = {
   type: 'post',
   path: '/checkVerification',
@@ -34,7 +33,6 @@ module.exports = {
   },
   func: async (req, res) => {
     try {
-
       if (!req.body.preVerifiedData || req.body.preVerifiedData === 'notVerified') {
         return res.status(400).json({
           status: 'notVerified',
@@ -44,16 +42,14 @@ module.exports = {
 
       verificationType = req.body.preVerifiedData.verificationType
 
-      if(req.body.preVerifiedData.verificationType == "Discord"){
-          userData = await getUserDiscordData(req.body.preVerifiedData.accessCode);
-      }
-
-      else if(req.body.preVerifiedData.verificationType == "phoneNumber"){
-        userData = {phoneNumber: req.body.preVerifiedData.phoneNumber}
-      }
-
-      else if(req.body.preVerifiedData.verificationType == "X"){
-        userData = {userName: req.body.preVerifiedData.XData.userName, profilePhoto: req.body.preVerifiedData.XData.profilePhoto}
+      if (req.body.preVerifiedData.verificationType === 'Discord') {
+        userData = await getUserDiscordData(req.body.preVerifiedData.accessCode)
+      } else if (req.body.preVerifiedData.verificationType === 'phoneNumber') {
+        userData = { phoneNumber: req.body.preVerifiedData.phoneNumber }
+      } else if (req.body.preVerifiedData.verificationType === 'X') {
+        userData = { userName: req.body.preVerifiedData.XData.userName, profilePhoto: req.body.preVerifiedData.XData.profilePhoto }
+      } else if (req.body.preVerifiedData.verificationType === 'email') {
+        userData = { email: req.body.preVerifiedData.email }
       }
 
       return res.status(200).json({
@@ -61,8 +57,6 @@ module.exports = {
         description: 'User identity is verified!',
         verifiedAttributes: userData // userData is whatever is returned by helper function
       })
-
-
     } catch (e) {
       console.error(e)
       res.status(500).json({
@@ -72,5 +66,5 @@ module.exports = {
       })
     }
   },
-  verificationType: verificationType
-};
+  verificationType
+}

@@ -81,7 +81,7 @@ module.exports = {
       //     status: 'error',
       //     ...checkError
       //   })
-      //}
+      // }
 
       // Save the sender's identityKey as the subject of the certificate
       req.body.subject = req.authrite.identityKey
@@ -89,7 +89,7 @@ module.exports = {
       // NOTE: There is no certificate at this point yet! Maybe there should be an identifier that the user data came from this server?
       // Make sure this certificate has been verified
       // const results = await getVerificationProof(req.authrite.identityKey)
-      // Make sure a validated certificate has been added 
+      // Make sure a validated certificate has been added
       // if (!results || !results.certificate) {
       //   return res.status(400).json({
       //     status: 'error',
@@ -99,10 +99,10 @@ module.exports = {
       // }
 
       // Check encrypted fields and decrypt them
-      console.log(`REQ BODY TYPE: ${req.body.type}`)
+      console.log(`REQ BODY TYPE ${req.body.type}`)
       const decryptedFields = await decryptCertificateFields(req.body, req.body.keyring, certifierPrivateKey)
-      let selectedCertificate = certificateTypes[req.body.type];
-      if(!selectedCertificate){
+      const selectedCertificate = certificateTypes[req.body.type]
+      if (!selectedCertificate) {
         return res.stats(400).json({
           status: 'error',
           code: 'ERR_CERT_TYPE',
@@ -110,7 +110,7 @@ module.exports = {
         })
       }
       const expectedFields = selectedCertificate.fields
-  console.log(`EXPECTED FIELDS: ${expectedFields}`)
+      console.log(`EXPECTED FIELDS: ${expectedFields}`)
       // Only validate the expected field keys?
       if (!expectedFields.every(x => !!decryptedFields[x])) {
         return res.status(400).json({
@@ -153,14 +153,14 @@ module.exports = {
       })
 
       // Hmac the user data to tag for privacy
-     const fieldKey =Object.keys(decryptedFields)[0]
-      const fieldValue = crypto.createHmac('sha256', SERVER_PRIVATE_KEY) 
-        .update(Object.values(decryptedFields)[0])                            
+      const fieldKey = Object.keys(decryptedFields)[0]
+      const fieldValue = crypto.createHmac('sha256', SERVER_PRIVATE_KEY)
+        .update(Object.values(decryptedFields)[0])
         .digest('hex')
       const subjectHmac = crypto.createHmac('sha256', SERVER_PRIVATE_KEY)
         .update(req.body.subject)
         .digest('hex')
-      
+
       // Create a new Bitcoin transaction
       const tx = await ninja.getTransactionWithOutputs({
         outputs: [{

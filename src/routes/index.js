@@ -4,6 +4,7 @@ module.exports = [
   require('./checkVerification'),
   require('./signCertificate'),
   require('./revokeCertificate'),
-  require("./sendVerificationText"),
-  require("./handleXVerification")
+  require('./sendVerificationText'),
+  require('./handleXVerification'),
+  require('./handleEmailVerification')
 ]

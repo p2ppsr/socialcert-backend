@@ -1,4 +1,4 @@
-// Phoneverification Certificate Type Definition // TODO: FIX DOCUMENTATION
+// Phoneverification Certificate Type Definition // TODO: FIX
 //
 // An Authrite Certifier defines one or more certificate types that they issue and manage.
 // The certificate type encompasses a list of fields and their expected and valid values.
@@ -12,10 +12,9 @@
 //
 // The purpose of this certificate is to server as a self-certified external identity to
 // be associated with the certificate owner.
-const certificateType = 'vdDWvftf1H+5+ZprUw123kjHlywH+v20aPQTuXgMpNc='
+const certificateType = 'exOl3KM0dIJ04EW5pZgbZmPag6MdJXd3/a1enmUU/BA='
 const certificateDefinition = {
-  userName: 'John Doe',
-  profilePhoto: 'https://pbs.twimg.com/profile_images/1777441236829491200/JWd4tvYB_normal.jpg'
+  email: 'test@example.net'
 }
 const certificateFields = Object.keys(certificateDefinition)
 
