@@ -3,7 +3,8 @@ const bsv = require('babbage-bsv')
 
 const discordcert = require('./certificates/discordcert')
 const phoneverification = require('./certificates/phoneverification')
-const verificationType = require('./routes/checkVerification')
+const xcert = require('./certificates/xcert')
+const emailcert = require('./certificates/emailcert')
 
 const certifierPrivateKey = process.env.SERVER_PRIVATE_KEY
 const certifierPublicKey = new bsv.PrivateKey(certifierPrivateKey).publicKey.toString('hex')
@@ -11,10 +12,6 @@ const certifierPublicKey = new bsv.PrivateKey(certifierPrivateKey).publicKey.toS
 // the requester has been issued and has authorized access to specific
 // certificate types and field values.
 // This specifies which types and fields are to be requested by authrite for confirmations.
-
-
-
-const requestedTypesAndFields = Object.fromEntries([[discordcert.certificateType, discordcert.certificateFields]])
 
 module.exports = {
   certifierPrivateKey,
@@ -24,13 +21,18 @@ module.exports = {
       definition: discordcert.certificateDefinition,
       fields: discordcert.certificateFields
     },
-    [phoneverification.certificateType]:{
+    [phoneverification.certificateType]: {
       definition: phoneverification.certificateDefinition,
       fields: phoneverification.certificateFields
+    },
+    [xcert.certificateType]: {
+      definition: xcert.certificateDefinition,
+      fields: xcert.certificateFields
+    },
+    [emailcert.certificateType]: {
+      definition: emailcert.certificateDefinition,
+      fields: emailcert.certificateFields
     }
-  },
-  // certificateType: discordcert.certificateType,
-  // certificateDefinition: discordcert.certificateDefinition,
-  // certificateFields: discordcert.certificateFields,
-  // requestedTypesAndFields
+  }
+
 }

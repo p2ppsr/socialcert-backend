@@ -39,10 +39,13 @@ jobs:
           DISCORD_API_ENDPOINT:  ${{ secrets.DISCORD_API_ENDPOINT }}
           DISCORD_CLIENT_ID: ${{ secrets.DISCORD_CLIENT_ID }}
           DISCORD_CLIENT_SECRET: ${{ secrets.DISCORD_CLIENT_SECRET }}
-          REDIRECT_URI: ${{ env.CURRENT_BRANCH == 'production' && secrets.PROD_REDIRECT_URI || secrets.STAGING_REDIRECT_URI }}
+          DISCORD_REDIRECT_URI: ${{ env.CURRENT_BRANCH == 'production' && secrets.PROD_DISCORD_REDIRECT_URI || secrets.STAGING_DISCORD_REDIRECT_URI }}
           TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
           TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
           TWILIO_SERVICE_SID: ${{ secrets.TWILIO_SERVICE_SID }}
+          X_API_KEY: ${{ secrets.X_API_KEY }}
+          X_API_SECRET: ${{ secrets.X_API_SECRET }}
+          X_REDIRECT_URI: ${{ env.CURRENT_BRANCH == 'production' && secrets.PROD_X_REDIRECT_URI || secrets.STAGING_X_REDIRECT_URI }}
       - uses: google-github-actions/auth@v1
         with:
           credentials_json: ${{ secrets.gcp_deploy_creds }}

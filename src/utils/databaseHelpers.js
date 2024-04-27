@@ -5,7 +5,8 @@ const {
 } = process.env
 
 let mongoClient
-const DB_NAME = `${NODE_ENV}_socialcert` 
+// const DB_NAME = `${NODE_ENV}_socialcert`
+const DB_NAME = 'staging_socialcert'
 
 async function connectToMongoDB () {
   if (!mongoClient) {
@@ -33,23 +34,20 @@ const saveCertificate = async (identityKey, certificate, tx, derivationPrefix, d
   // Inserts certified data for created user
   await mongoClient.db(`${DB_NAME}`).collection('certifications').insertOne({
     identityKey,
-    certificate, 
-    tx, 
+    certificate,
+    tx,
     derivationPrefix,
     derivationSuffix,
     createdAt: new Date()
   })
-  
 }
-
-
 
 const getVerificationProof = async (identityKey) => {
   const mongoClient = await getMongoClient()
 
   // Filter by identity key and identityKey
   const filter = {
-    identityKey,
+    identityKey
   }
 
   // Only select relevant data
