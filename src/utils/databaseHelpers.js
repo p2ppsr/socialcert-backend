@@ -5,8 +5,7 @@ const {
 } = process.env
 
 let mongoClient
-// const DB_NAME = `${NODE_ENV}_socialcert`
-const DB_NAME = 'staging_socialcert'
+const DB_NAME = `${NODE_ENV}_socialcert`
 
 async function connectToMongoDB () {
   if (!mongoClient) {
