@@ -12,7 +12,7 @@ let requestTokenSecret
 const oauth = OAuth({
   consumer: { key: oauthConsumerKey, secret: consumerSecret },
   signature_method: 'HMAC-SHA1',
-  hash_function (base_string, key) {
+  hash_function(base_string, key) {
     return crypto.createHmac('sha1', key).update(base_string).digest('base64')
   }
 })
@@ -31,62 +31,63 @@ module.exports = {
     status: 'verified | notVerified'
   },
   func: async (req, res) => {
-    if (req.body.funcAction == 'makeRequest') {
+    if (req.body.funcAction === 'makeRequest') {
       initialRequest(req, res)
-    } else if (req.body.funcAction == 'getUserInfo') {
+    } else if (req.body.funcAction === 'getUserInfo') {
       exchangeAccessToken(req, res)
     }
   }
 }
 
-async function initialRequest (req, res) {
-// Generate a random nonce and current timestamp
-  const oauthNonce = crypto.randomBytes(16).toString('hex')
-  const oauthTimestamp = Math.floor(Date.now() / 1000)
-  // Set up additional OAuth parameters
-  const additionalParams = {
-    oauth_callback: callbackURL
-  }
+async function initialRequest(req, res) {
+  try {
+    // Generate a random nonce and current timestamp
+    const oauthNonce = crypto.randomBytes(16).toString('hex')
+    const oauthTimestamp = Math.floor(Date.now() / 1000)
 
-  // Generate OAuth headers
-  const oauthHeaders = oauth.toHeader(oauth.authorize({
-    url: 'https://api.twitter.com/oauth/request_token',
-    method: 'POST',
-    data: additionalParams
-  }, {}))
-
-  // Make the request using the generated headers
-  const requestOptions = {
-    method: 'POST',
-    url: 'https://api.twitter.com/oauth/request_token',
-    headers: {
-      ...oauthHeaders,
-      'Content-Type': 'application/x-www-form-urlencoded'
+    // Set up additional OAuth parameters
+    const additionalParams = {
+      oauth_callback: callbackURL,
+      oauth_nonce: oauthNonce,
+      oauth_timestamp: oauthTimestamp
     }
+
+    // Generate OAuth headers
+    const oauthHeaders = oauth.toHeader(oauth.authorize({
+      url: 'https://api.twitter.com/oauth/request_token',
+      method: 'POST',
+      data: additionalParams
+    }, {}))
+
+    // Make the request using the generated headers
+    const requestOptions = {
+      method: 'POST',
+      url: 'https://api.twitter.com/oauth/request_token',
+      headers: {
+        ...oauthHeaders,
+        'Content-Type': 'application/x-www-form-urlencoded'
+      }
+    }
+
+    // Making a call to oauth/request_token providing our developer API key and API secret, in return we are given a request token and a request token secret
+    const response = await axios(requestOptions)
+    const responseData = response.data
+    const params = new URLSearchParams(responseData)
+    const requestToken = params.get('oauth_token')
+    requestTokenSecret = params.get('oauth_token_secret') // Consider how to handle this securely
+
+    // Sending users to twitter so that they can authorize SocialCert, this is passed the requestToken so it can work
+    // It'll redirect the user back to localhost:3001/twitterAuth but the if statement will be true!
+    return res.status(200).json({
+      requestToken
+    })
+  } catch (error) {
+    console.error('Error:', error)
+    return res.status(500).json({ error: 'An error occurred while requesting the token' })
   }
-
-  // Making a call to oauth/request_token providing our developer API key and API secret, in return we are given a request token and
-  // a request token secret
-  axios(requestOptions)
-    .then(response => {
-      const responseData = response.data
-      const params = new URLSearchParams(responseData)
-      const requestToken = params.get('oauth_token')
-      requestTokenSecret = params.get('oauth_token_secret')
-
-      // Sending users to twitter so that they can authorize SocialCert, this is passed the requestToken so it can work
-      // It'll redirect the user back to localhost:3001/twitterAuth but the if statement will be true!
-      return res.status(200).json({
-        requestToken
-
-      })
-    })
-    .catch(error => {
-      console.error('Error:', error)
-    })
 }
 
-async function exchangeAccessToken (req, res) {
+async function exchangeAccessToken(req, res) {
   try {
     // OAuth data
     const oauthToken = req.body.oauthToken
@@ -121,7 +122,7 @@ async function exchangeAccessToken (req, res) {
   }
 }
 
-async function getUserInfo (accessToken, accessTokenSecret, res) {
+async function getUserInfo(accessToken, accessTokenSecret, res) {
   try {
     // OAuth header
     const authHeader = oauth.toHeader(oauth.authorize({
