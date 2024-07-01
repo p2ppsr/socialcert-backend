@@ -86,8 +86,6 @@ async function initialRequest(req, res) {
       createdAt: new Date()
     })
 
-    await mongoClient.close()
-
     return res.status(200).json({ requestToken })
   } catch (error) {
     console.error('Error:', error.response ? error.response.data : error.message)
@@ -106,7 +104,6 @@ async function exchangeAccessToken(req, res) {
     const record = await mongoClient.db(DB_NAME).collection('requests').findOne({ requestToken: oauthToken })
 
     if (!record) {
-      await mongoClient.close()
       return res.status(400).json({ error: 'Invalid request token' })
     }
 
@@ -133,7 +130,6 @@ async function exchangeAccessToken(req, res) {
 
     // Delete the used request token secret from MongoDB
     await mongoClient.db(DB_NAME).collection('requests').deleteOne({ requestToken: oauthToken })
-    await mongoClient.close()
 
     console.log('Access Token:', accessToken)
     console.log('Access Token Secret:', accessTokenSecret)
