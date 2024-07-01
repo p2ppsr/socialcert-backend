@@ -20,7 +20,7 @@ async function connectToMongoDB() {
   }
 }
 
-export async function getMongoClient() {
+async function getMongoClient() {
   if (!mongoClient) {
     await connectToMongoDB()
   }
