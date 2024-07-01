@@ -7,7 +7,7 @@ const {
 let mongoClient
 const DB_NAME = `${NODE_ENV}_socialcert`
 
-async function connectToMongoDB () {
+async function connectToMongoDB() {
   if (!mongoClient) {
     try {
       mongoClient = new MongoClient(process.env.SIGNIA_DB_CONNECTION, { useUnifiedTopology: true })
@@ -20,7 +20,7 @@ async function connectToMongoDB () {
   }
 }
 
-async function getMongoClient () {
+export async function getMongoClient() {
   if (!mongoClient) {
     await connectToMongoDB()
   }

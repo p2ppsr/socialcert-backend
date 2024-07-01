@@ -2,12 +2,14 @@ require('dotenv').config()
 const OAuth = require('oauth-1.0a')
 const crypto = require('crypto')
 const axios = require('axios')
+const { getMongoClient } = require('../utils/databaseHelpers')
 const {
   X_API_KEY: oauthConsumerKey,
   X_REDIRECT_URI: callbackURL,
   X_API_SECRET: consumerSecret
 } = process.env
-let requestTokenSecret
+
+const DB_NAME = 'x-verification'
 
 const oauth = OAuth({
   consumer: { key: oauthConsumerKey, secret: consumerSecret },
@@ -23,7 +25,7 @@ module.exports = {
   summary: 'Submit KYC verification proof for the current user',
   parameters: {
     phoneNumber: {
-      phoneNumber: 'Code exchanged for authorization token from Discord' // TODO: Write docuentation
+      phoneNumber: 'Code exchanged for authorization token from Discord' // TODO: Write documentation
     },
     certificateFields: {}
   },
@@ -32,9 +34,9 @@ module.exports = {
   },
   func: async (req, res) => {
     if (req.body.funcAction === 'makeRequest') {
-      initialRequest(req, res)
+      await initialRequest(req, res)
     } else if (req.body.funcAction === 'getUserInfo') {
-      exchangeAccessToken(req, res)
+      await exchangeAccessToken(req, res)
     }
   }
 }
@@ -53,11 +55,12 @@ async function initialRequest(req, res) {
     }
 
     // Generate OAuth headers
-    const oauthHeaders = oauth.toHeader(oauth.authorize({
+    const oauthData = {
       url: 'https://api.twitter.com/oauth/request_token',
       method: 'POST',
       data: additionalParams
-    }, {}))
+    }
+    const oauthHeaders = oauth.toHeader(oauth.authorize(oauthData))
 
     // Make the request using the generated headers
     const requestOptions = {
@@ -69,20 +72,25 @@ async function initialRequest(req, res) {
       }
     }
 
-    // Making a call to oauth/request_token providing our developer API key and API secret, in return we are given a request token and a request token secret
     const response = await axios(requestOptions)
     const responseData = response.data
     const params = new URLSearchParams(responseData)
     const requestToken = params.get('oauth_token')
-    requestTokenSecret = params.get('oauth_token_secret') // Consider how to handle this securely
+    const requestTokenSecret = params.get('oauth_token_secret')
 
-    // Sending users to twitter so that they can authorize SocialCert, this is passed the requestToken so it can work
-    // It'll redirect the user back to localhost:3001/twitterAuth but the if statement will be true!
-    return res.status(200).json({
-      requestToken
+    // Store the request token and secret in MongoDB
+    const mongoClient = await getMongoClient()
+    await mongoClient.db(DB_NAME).collection('requests').insertOne({
+      requestToken,
+      requestTokenSecret,
+      createdAt: new Date()
     })
+
+    await mongoClient.close()
+
+    return res.status(200).json({ requestToken })
   } catch (error) {
-    console.error('Error:', error)
+    console.error('Error:', error.response ? error.response.data : error.message)
     return res.status(500).json({ error: 'An error occurred while requesting the token' })
   }
 }
@@ -92,6 +100,17 @@ async function exchangeAccessToken(req, res) {
     // OAuth data
     const oauthToken = req.body.oauthToken
     const oauthVerifier = req.body.oauthVerifier
+
+    // Retrieve the request token secret from MongoDB
+    const mongoClient = await getMongoClient()
+    const record = await mongoClient.db(DB_NAME).collection('requests').findOne({ requestToken: oauthToken })
+
+    if (!record) {
+      await mongoClient.close()
+      return res.status(400).json({ error: 'Invalid request token' })
+    }
+
+    const requestTokenSecret = record.requestTokenSecret
 
     const requestData = {
       url: 'https://api.twitter.com/oauth/access_token',
@@ -112,13 +131,18 @@ async function exchangeAccessToken(req, res) {
     const accessToken = params.get('oauth_token')
     const accessTokenSecret = params.get('oauth_token_secret')
 
+    // Delete the used request token secret from MongoDB
+    await mongoClient.db(DB_NAME).collection('requests').deleteOne({ requestToken: oauthToken })
+    await mongoClient.close()
+
     console.log('Access Token:', accessToken)
     console.log('Access Token Secret:', accessTokenSecret)
 
+    // Call getUserInfo to fetch user information
     getUserInfo(accessToken, accessTokenSecret, res)
   } catch (error) {
-    console.error('Error exchanging OAuth token for access token:', error)
-    throw error
+    console.error('Error exchanging OAuth token for access token:', error.response ? error.response.data : error.message)
+    return res.status(500).json({ error: 'An error occurred while exchanging the token' })
   }
 }
 
@@ -142,7 +166,7 @@ async function getUserInfo(accessToken, accessTokenSecret, res) {
       profilePhoto: userInfo.profile_image_url_https
     })
   } catch (error) {
-    console.error('Error fetching user info:', error)
-    throw error
+    console.error('Error fetching user info:', error.response ? error.response.data : error.message)
+    return res.status(500).json({ error: 'An error occurred while fetching user info' })
   }
 }
