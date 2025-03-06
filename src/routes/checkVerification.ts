@@ -4,6 +4,7 @@ const { saveVerificationProof } = require('../utils/databaseHelpers')
 // const { getVerificationInfo } = require('../utils/getVerificationInfo')
 // const { publishFile } = require('nanostore-publisher')
 import { Request, Response } from 'express';
+import { UserData } from '../types/checkVerification'
 const { getUserDiscordData } = require('../utils/discordCertHelper')
 const axios = require('axios')
 
@@ -16,7 +17,7 @@ const {
   DISCORD_CLIENT_SECRET,
   REDIRECT_URI
 } = process.env
-let userData: Object
+let userData: UserData
 let verificationType
 
 module.exports = {

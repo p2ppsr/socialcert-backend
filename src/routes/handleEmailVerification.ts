@@ -1,8 +1,10 @@
 require('dotenv').config()
+import { Request, Response } from 'express';
 const accountSid = process.env.TWILIO_ACCOUNT_SID
 const authToken = process.env.TWILIO_AUTH_TOKEN
 const serviceSid = process.env.TWILIO_SERVICE_SID
 const client = require('twilio')(accountSid, authToken)
+import {VerificationCheck } from "../types/twilio"
 
 module.exports = {
   type: 'post',
@@ -17,7 +19,7 @@ module.exports = {
   exampleResponse: {
     status: 'verified | notVerified'
   },
-  func: async (req, res) => {
+  func: async (req: Request, res: Response) => {
     if (req.body.funcAction === 'sendEmail') {
       sendEmailFunc(req, res)
     } else if (req.body.funcAction === 'verifyCode') {
@@ -27,13 +29,12 @@ module.exports = {
   }
 }
 
-async function sendEmailFunc (req, res) {
+async function sendEmailFunc (req: Request, res: Response) {
   try {
     const email = req.body.email
     client.verify.v2.services(serviceSid)
       .verifications
       .create({ to: email, channel: 'email' })
-      .then(verification => console.log(verification))
     return res.status(200).json({
       emailSentStatus: true,
       sentEmail: email
@@ -47,12 +48,12 @@ async function sendEmailFunc (req, res) {
   }
 }
 
-async function verifyCode (req, res) {
+async function verifyCode (req: Request, res: Response) {
   console.log('RIGHT BEFORE TRYING TO VERIFY CODE')
   client.verify.v2.services(serviceSid)
     .verificationChecks
     .create({ to: req.body.verifyEmail, code: req.body.verificationCode })
-    .then(verificationCheck => {
+    .then((verificationCheck: VerificationCheck) => {
       if (verificationCheck.status === 'approved') {
         console.log('INSIDE APPROVED')
         return res.status(200).json({
