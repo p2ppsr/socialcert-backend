@@ -3,6 +3,7 @@ const { saveVerificationProof } = require('../utils/databaseHelpers')
 // const getPhotoDataAsBuffer = require('../utils/getPhotoDataAsBuffer')
 // const { getVerificationInfo } = require('../utils/getVerificationInfo')
 // const { publishFile } = require('nanostore-publisher')
+import { Request, Response } from 'express';
 const { getUserDiscordData } = require('../utils/discordCertHelper')
 const axios = require('axios')
 
@@ -15,7 +16,7 @@ const {
   DISCORD_CLIENT_SECRET,
   REDIRECT_URI
 } = process.env
-let userData
+let userData: Object
 let verificationType
 
 module.exports = {
@@ -31,7 +32,7 @@ module.exports = {
   exampleResponse: {
     status: 'verified | notVerified'
   },
-  func: async (req, res) => {
+  func: async (req: Request, res: Response) => {
     try {
       if (!req.body.preVerifiedData || req.body.preVerifiedData === 'notVerified') {
         return res.status(400).json({
