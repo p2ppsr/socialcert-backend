@@ -11,6 +11,8 @@
  * If no certificate was received a status of 'nocertificate' is returned.
  *
  */
+import { Response } from 'express';
+import { AuthenticatedRequest } from '../types/AuthriteTyping';
 module.exports = {
   type: 'post',
   path: '/confirmCertificate',
@@ -22,11 +24,11 @@ module.exports = {
   exampleResponse: {
     status: 'success | nocertificate'
   },
-  func: async (req, res) => {
+  func: async (req: AuthenticatedRequest, res: Response) => {
     try {
       let found = false
-      for (let i = 0; i < req.authrite.certificates.length; i++) {
-        const cert = req.authrite.certificates[i]
+      for (let i = 0; i < req.auth?.certificates.length; i++) {
+        const cert = req.auth?.certificates[i]
         found = true
         for (const fieldName in req.body) {
           if (req.body[fieldName] !== cert.decryptedFields[fieldName]) {

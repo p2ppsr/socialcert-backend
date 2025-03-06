@@ -3,6 +3,8 @@ const { Ninja } = require('ninja-base')
 const pushdrop = require('pushdrop')
 const { getPaymentPrivateKey } = require('sendover')
 const { getRevocationData, insertRevocationRecord } = require('../utils/databaseHelpers')
+import { Response } from 'express'
+import { AuthenticatedRequest } from '../types/AuthriteTyping';
 
 const {
   SERVER_PRIVATE_KEY,
@@ -20,10 +22,10 @@ module.exports = {
   exampleResponse: {
     status: 'verified | notVerified'
   },
-  func: async (req, res) => {
+  func: async (req: AuthenticatedRequest, res: Response) => {
     try {
       // Make sure only authorized users can revoke certificates
-      if (req.authrite.identityKey !== new bsv.PrivateKey(SERVER_PRIVATE_KEY).publicKey.toString('hex')) {
+      if (req.auth?.identityKey !== new bsv.PrivateKey(SERVER_PRIVATE_KEY).publicKey.toString('hex')) {
         return res.status(400).json({
           status: 'error',
           code: 'ERR_UNAUTHORIZED',

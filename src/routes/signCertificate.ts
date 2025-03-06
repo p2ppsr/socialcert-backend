@@ -5,6 +5,8 @@ const pushdrop = require('pushdrop')
 const { getPaymentPrivateKey } = require('sendover')
 const bsv = require('babbage-bsv')
 const crypto = require('crypto')
+import { Response } from 'express'
+import { AuthenticatedRequest } from '../types/AuthriteTyping';
 
 const {
   SERVER_PRIVATE_KEY,
@@ -69,7 +71,7 @@ module.exports = {
     certifier: '025384871bedffb233fdb0b4899285d73d0f0a2b9ad18062a062c01c8bdb2f720a',
     signature: '3045022100a613d9a094fac52779b29c40ba6c82e8deb047e45bda90f9b15e976286d2e3a7022017f4dead5f9241f31f47e7c4bfac6f052067a98021281394a5bc859c5fb251cc'
   },
-  func: async (req, res) => {
+  func: async (req: AuthenticatedRequest, res: Response) => {
     try {
       // const checkError = certifierSignCheckArgs({
       //   ...req.body,
@@ -84,7 +86,7 @@ module.exports = {
       // }
 
       // Save the sender's identityKey as the subject of the certificate
-      req.body.subject = req.authrite.identityKey
+      req.body.subject = req.auth?.identityKey
 
       // NOTE: There is no certificate at this point yet! Maybe there should be an identifier that the user data came from this server?
       // Make sure this certificate has been verified
@@ -103,7 +105,7 @@ module.exports = {
       const decryptedFields = await decryptCertificateFields(req.body, req.body.keyring, certifierPrivateKey)
       const selectedCertificate = certificateTypes[req.body.type]
       if (!selectedCertificate) {
-        return res.stats(400).json({
+        return res.status(400).json({
           status: 'error',
           code: 'ERR_CERT_TYPE',
           description: 'Selected certificate is not in certifacteTypes'
@@ -112,7 +114,7 @@ module.exports = {
       const expectedFields = selectedCertificate.fields
       console.log(`EXPECTED FIELDS: ${expectedFields}`)
       // Only validate the expected field keys?
-      if (!expectedFields.every(x => !!decryptedFields[x])) {
+      if (!expectedFields.every((x: string) => !!decryptedFields[x])) {
         return res.status(400).json({
           status: 'error',
           code: 'ERR_EXPECTED_FIELDS',
@@ -192,7 +194,7 @@ module.exports = {
       })
 
       // Save certificate data and revocation key derivation information
-      await saveCertificate(req.authrite.identityKey, certificate, tx, derivationPrefix, derivationSuffix)
+      await saveCertificate(req.auth?.identityKey, certificate, tx, derivationPrefix, derivationSuffix)
 
       // Returns signed cert to the requester
       return res.status(200).json(certificate)
