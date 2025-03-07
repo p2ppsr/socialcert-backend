@@ -70,7 +70,7 @@ async function verifyCode (req: AuthRequest, res: Response) {
           { identityKey: req.auth?.identityKey, certificateType: certificateType }, // Updating certificate if already there
           {
             $set: {
-              dentityKey: req.auth?.identityKey,
+              identityKey: req.auth?.identityKey,
               certificateType: certificateType,
               certificateFields: {
                 email:req.body.verifyEmail,

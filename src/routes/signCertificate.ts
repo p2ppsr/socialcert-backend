@@ -132,7 +132,7 @@ module.exports = {
     
       const dbCertificate = await certifacteCollection.findOne({
         userIdentitykey,      
-        certificateType    
+        selectedCertificate    
       });
 
       if(!dbCertificate)
@@ -144,81 +144,16 @@ module.exports = {
         })
       }
 
-    if (! dbCertificate.certificateFields.every((x: string) => !!decryptedFields[x])) {
+    if (!dbCertificate.certificateFields.every((x: string) => !!decryptedFields[x])) {
       return res.status(400).json({
         status: 'error',
         code: 'ERR_EXPECTED_FIELDS',
         description: 'One or more expected certificate fields is missing or invalid.'
       })
-    }
-    // Get the expected fields for the selected certificate type
-    
-    // REFACTOR TO ADD AUTHRITE EXPRESS SO IDENTITY KEY CAN BE ACCESSED THROUGH req.auth.identitykey
-      // TODO: ADD ANOTHER IF CHECK THAT MATCHES THE USER'S CERTIFICATE DATA VERSEUS WHATS IN THE MONGO DB
-      
-      
-
-      // Create an actual spendable revocation outpoint
-      const ninja = new Ninja({
-        privateKey: SERVER_PRIVATE_KEY,
-        config: {
-          dojoURL: DOJO_URL
-        }
-      })
-
-      // Random key derivation data
-      const derivationPrefix = require('crypto')
-        .randomBytes(10)
-        .toString('base64')
-      const derivationSuffix = require('crypto')
-        .randomBytes(10)
-        .toString('base64')
-      const invoiceNumber = `2-3241645161d8-${derivationPrefix} ${derivationSuffix}`
-
-      // Derive a new key for the revocation tx locking script
-      const derivedPrivateKey = getPaymentPrivateKey({
-        recipientPrivateKey: SERVER_PRIVATE_KEY,
-        senderPublicKey: new bsv.PrivateKey(SERVER_PRIVATE_KEY).publicKey.toString('hex'),
-        invoiceNumber
-      })
-
-      // Create a pushdrop revocation token with the serial number of the certificate to sign
-      const lockingScript = await pushdrop.create({
-        fields: [
-          Buffer.from(req.body.serialNumber)
-        ],
-        key: derivedPrivateKey
-      })
-
-      // Hmac the user data to tag for privacy
-      const fieldKey = Object.keys(decryptedFields)[0]
-      const fieldValue = crypto.createHmac('sha256', SERVER_PRIVATE_KEY)
-        .update(Object.values(decryptedFields)[0])
-        .digest('hex')
-      const subjectHmac = crypto.createHmac('sha256', SERVER_PRIVATE_KEY)
-        .update(req.body.subject)
-        .digest('hex')
-
-      // Create a new Bitcoin transaction
-      const tx = await ninja.getTransactionWithOutputs({
-        outputs: [{
-          satoshis: 500,
-          script: lockingScript,
-          tags: [`${fieldKey} ${fieldValue}`, `subject ${subjectHmac}`],
-          customInstructions: JSON.stringify({
-            derivationPrefix,
-            derivationSuffix
-          })
-        }],
-        labels: [
-          'SocialCert'
-        ],
-        note: 'SocialCert Certificate Issuance',
-        autoProcess: true
-      })
+    }    
 
       // Set the revocation outpoint for this certificate
-      const revocationOutpoint = tx.txid + '00000000'
+      const revocationOutpoint = '0000000000000000000000000000000000000000000000000000000000000000.0'
       console.log(`REQ.BODY.TYPE ${req.body.type}`)
       console.log(`VREVOCATION OUT POINT: ${revocationOutpoint}`)
       console.log(`CERTIFIER PRIVATE KEY: ${certifierPrivateKey}`)
@@ -230,7 +165,7 @@ module.exports = {
       })
 
       // Save certificate data and revocation key derivation information
-      await saveCertificate(req.auth?.identityKey, certificate, tx, derivationPrefix, derivationSuffix)
+      await saveCertificate(req.auth?.identityKey, certificate, "not_supported", "not_supported", "not_supported")
 
       // Returns signed cert to the requester
       return res.status(200).json(certificate)

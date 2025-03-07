@@ -1,12 +1,21 @@
-require('dotenv').config()
-const express = require('express')
-const prettyjson = require('prettyjson')
-const routes = require('./routes')
-const HTTP_PORT = process.env.PORT || process.env.HTTP_PORT || 3002
+import * as dotenv from 'dotenv'
+dotenv.config()
+import express from 'express'
+import routes  from './routes'
 const ROUTING_PREFIX = process.env.ROUTING_PREFIX || ''
-const authrite = require('authrite-express')
-const bsv = require('babbage-bsv')
-import { Request, Response, NextFunction } from 'express';
+import { Response, NextFunction } from 'express';
+import { AuthRequest, createAuthMiddleware, } from '@bsv/auth-express-middleware'
+import {Setup} from '@bsv/wallet-toolbox'
+import { Chain } from '@bsv/wallet-toolbox/out/src/sdk'
+
+const {
+  NODE_ENV = 'development',
+  BSV_NETWORK = 'main',
+  HTTP_PORT = process.env.PORT || process.env.HTTP_PORT || 3002,
+  SERVER_PRIVATE_KEY,
+  WALLET_STORAGE_URL
+} = process.env
+
 
 
 if (!process.env.SERVER_PRIVATE_KEY) {
@@ -21,10 +30,18 @@ if (process.env.SERVER_PRIVATE_KEY === '0000000000000000000000000000000000000000
 }
 
 const app = express()
+
+const setupFunction = async () => {
+  const wallet = await Setup.createWalletClientNoEnv({
+  chain: BSV_NETWORK as Chain,
+  rootKeyHex: SERVER_PRIVATE_KEY as string,
+  storageUrl: WALLET_STORAGE_URL
+})
+
 app.use(express.json({ limit: '10mb' }))
 
 // This allows the API to be used when CORS is enforced
-app.use((req: Request, res: Response, next: NextFunction) => {
+app.use((req: AuthRequest, res: Response, next: NextFunction) => {
   res.header('Access-Control-Allow-Origin', '*')
   res.header('Access-Control-Allow-Headers', '*')
   res.header('Access-Control-Allow-Methods', '*')
@@ -38,7 +55,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 })
 
 // This ensures that HTTPS is used unless you are in development mode
-app.use((req: Request, res: Response, next: NextFunction) => {
+app.use((req: AuthRequest, res: Response, next: NextFunction) => {
   if (
     !req.secure &&
     req.get('x-forwarded-proto') !== 'https' &&
@@ -52,18 +69,17 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 // This makes the documentation site available
 app.use(express.static('public'))
 
-app.use(authrite.middleware({
-  serverPrivateKey: process.env.SERVER_PRIVATE_KEY,
-  baseUrl: process.env.HOSTING_DOMAIN
+app.use(createAuthMiddleware({
+  wallet: wallet
 }))
 
 // This adds all the API routes
 routes.forEach((route: any) => {
-  app[route.type](`${ROUTING_PREFIX}${route.path}`, route.func)
+  app[route.type as 'post' | 'get'](`${ROUTING_PREFIX}${route.path}`, route.func)
 })
 
 // This is the 404 route
-app.use((req: Request, res: Response) => {
+app.use((req: AuthRequest, res: Response) => {
   console.log('404', req.url)
   res.status(404).json({
     status: 'error',
@@ -71,9 +87,11 @@ app.use((req: Request, res: Response) => {
     description: 'Route not found.'
   })
 })
+}
 
 // This starts socialcert server listening for requests
-app.listen(HTTP_PORT, () => {
+app.listen(HTTP_PORT, async () => {
+  await setupFunction();
   console.log('socialcert listening on port', HTTP_PORT)
   console.log(
     'Certifier:',
