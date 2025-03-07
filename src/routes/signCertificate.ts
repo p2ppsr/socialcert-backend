@@ -1,3 +1,6 @@
+import { Response } from 'express'
+import { AuthenticatedRequest } from '../types/AuthriteTyping';
+import { MongoClient } from 'mongodb'
 const { decryptCertificateFields, certifierSignCheckArgs, certifierCreateSignedCertificate } = require('authrite-utils')
 const { saveCertificate, getVerificationProof } = require('../utils/databaseHelpers')
 const { Ninja } = require('ninja-base')
@@ -5,8 +8,10 @@ const pushdrop = require('pushdrop')
 const { getPaymentPrivateKey } = require('sendover')
 const bsv = require('babbage-bsv')
 const crypto = require('crypto')
-import { Response } from 'express'
-import { AuthenticatedRequest } from '../types/AuthriteTyping';
+const uri = "mongodb://localhost:27017"; // Local MongoDB connection string
+const mongoClient = new MongoClient(uri);
+
+
 
 const {
   SERVER_PRIVATE_KEY,
@@ -86,7 +91,8 @@ module.exports = {
       // }
 
       // Save the sender's identityKey as the subject of the certificate
-      req.body.subject = req.auth?.identityKey
+      const userIdentitykey = req.auth?.identityKey
+      req.body.subject = userIdentitykey
 
       // NOTE: There is no certificate at this point yet! Maybe there should be an identifier that the user data came from this server?
       // Make sure this certificate has been verified
@@ -121,6 +127,36 @@ module.exports = {
           description: 'One or more expected certificate fields is missing or invalid.'
         })
       }
+      await mongoClient.connect();
+      const certifacteCollection = mongoClient.db('emailCertTesting').collection('certificates');
+    
+      const dbCertificate = await certifacteCollection.findOne({
+        userIdentitykey,      
+        certificateType    
+      });
+
+      if(!dbCertificate)
+      {
+        return res.status(400).json({
+          status: 'error',
+          code: 'ERR_EXPECTED_FIELDS',
+          description: 'Certificate could not be found in the database'
+        })
+      }
+
+    if (! dbCertificate.certificateFields.every((x: string) => !!decryptedFields[x])) {
+      return res.status(400).json({
+        status: 'error',
+        code: 'ERR_EXPECTED_FIELDS',
+        description: 'One or more expected certificate fields is missing or invalid.'
+      })
+    }
+    // Get the expected fields for the selected certificate type
+    
+    // REFACTOR TO ADD AUTHRITE EXPRESS SO IDENTITY KEY CAN BE ACCESSED THROUGH req.auth.identitykey
+      // TODO: ADD ANOTHER IF CHECK THAT MATCHES THE USER'S CERTIFICATE DATA VERSEUS WHATS IN THE MONGO DB
+      
+      
 
       // Create an actual spendable revocation outpoint
       const ninja = new Ninja({

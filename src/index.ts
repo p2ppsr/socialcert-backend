@@ -52,20 +52,6 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 // This makes the documentation site available
 app.use(express.static('public'))
 
-// This is a simple API request logger
-app.use((req: Request, res: Response, next: NextFunction) => {
-  console.log('[' + req.method + '] <- ' + req._parsedUrl.pathname)
-  const logObject = { ...req.body }
-  console.log(prettyjson.render(logObject, { keysColor: 'blue' }))
-  res.nologJson = res.json
-  res.json = json => {
-    res.nologJson(json)
-    console.log('[' + req.method + '] -> ' + req._parsedUrl.pathname)
-    console.log(prettyjson.render(json, { keysColor: 'green' }))
-  }
-  next()
-})
-
 app.use(authrite.middleware({
   serverPrivateKey: process.env.SERVER_PRIVATE_KEY,
   baseUrl: process.env.HOSTING_DOMAIN

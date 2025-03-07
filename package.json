@@ -27,6 +27,7 @@
   },
   "homepage": "https://github.com/p2ppsr/socialcert-backend#readme",
   "dependencies": {
+    "@bsv/auth-express-middleware": "^1.0.12",
     "authrite-express": "^0.4.36",
     "authrite-utils": "^0.3.36",
     "axios": "^1.6.7",
