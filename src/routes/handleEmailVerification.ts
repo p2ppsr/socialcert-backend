@@ -28,6 +28,7 @@ export const checkEmailVerification: CertifierRoute = {
   },
   func: async (req: AuthRequest, res: Response) => {
     if (req.body.funcAction === 'sendEmail') {
+      console.log("INSIDE SEND EMAIL FUNC");
       sendEmailFunc(req, res)
     } else if (req.body.funcAction === 'verifyCode') {
       console.log('INSIDE VERIFY CODE IF STATEMENT')

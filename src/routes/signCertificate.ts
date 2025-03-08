@@ -164,8 +164,20 @@ export const signCertificate: CertifierRoute = {
 
       // Save certificate data and revocation key derivation information
       // await saveCertificate(req.auth?.identityKey, signedCertificate, "not_supported", "not_supported", "not_supported")
-      // TODO: save cert
+      const signedCertificatesCollection = mongoClient.db('emailCertTesting').collection('signedCertificates')
 
+      // TODO: save cert
+      await signedCertificatesCollection.updateOne(
+            { identityKey: req.auth?.identityKey, signedCertificate: signedCertificatesCollection }, // Updating certificate if already there
+            {
+              $set: {
+                identityKey: req.auth?.identityKey,
+                signedCertificate: signedCertificatesCollection,
+                createdAt: new Date()  // Optionally update the createdAt timestamp
+              }
+            },
+            { upsert: true }  // This ensures a new document is created if no match is found
+          );
       // Returns signed cert to the requester
       return res.status(200).json({
         certificate: signedCertificate,

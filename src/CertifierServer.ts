@@ -59,7 +59,9 @@ export class CertifierServer {
 
     // Configure the auth and payment middleware
     this.app.use(createAuthMiddleware({
-      wallet: this.wallet
+      wallet: this.wallet,
+      logger: console,
+      logLevel: "debug"
     }))
     if (this.monetize) {
       this.app.use(
