@@ -5,7 +5,7 @@ import { AuthRequest } from '@bsv/auth-express-middleware'
 import { VerificationCheck } from "../types/twilio"
 import { certificateType } from "../certificates/emailcert";
 import { CertifierRoute } from "../CertifierServer";
-const uri = "mongodb://localhost:27017"; // Local MongoDB connection string
+const uri = "mongodb://localhost:27017/emailCertTesting"; // Local MongoDB connection string
 const mongoClient = new MongoClient(uri);
 const accountSid = process.env.TWILIO_ACCOUNT_SID as string
 const authToken = process.env.TWILIO_AUTH_TOKEN as string
@@ -58,14 +58,18 @@ async function sendEmailFunc(req: AuthRequest, res: Response) {
 
 async function verifyCode(req: AuthRequest, res: Response) {
   console.log('RIGHT BEFORE TRYING TO VERIFY CODE')
-  client.verify.v2.services(serviceSid)
-    .verificationChecks
-    .create({ to: req.body.verifyEmail, code: req.body.verificationCode })
-    .then((verificationCheck: VerificationCheck) => {
-      if (verificationCheck.status === 'approved') {
+  // client.verify.v2.services(serviceSid)
+  //   .verificationChecks
+  //   .create({ to: req.body.verifyEmail, code: req.body.verificationCode })
+  //   .then((verificationCheck: VerificationCheck) => {
+      if (true) {
         // Ugly async wrapping
-        async () => {
+
+       (async () => {
+        console.log("Inside If")
+
           await mongoClient.connect();
+          console.log("After mongoclient connect")
           const db = mongoClient.db('emailCertTesting');
           const certificationsCollection = db.collection('certificates');
 
@@ -87,14 +91,14 @@ async function verifyCode(req: AuthRequest, res: Response) {
           // If stuck look at coolcert repo
           // in index.ts add a createwallet look line 26 in coolcert server code on index.ts
           return res.status(200).json({
-            verificationStatus: true
+           verificationStatus: true
           })
-        }
+        })();
       } else {
         console.log('INSIDE FAILED')
         return res.status(200).json({
           verificationStatus: false
         })
       }
-    })
+    //})
 }

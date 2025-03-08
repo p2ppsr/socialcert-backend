@@ -1,6 +1,6 @@
 import { Response } from 'express'
 import { MongoClient } from 'mongodb'
-const uri = "mongodb://localhost:27017"; // Local MongoDB connection string
+const uri = "mongodb://localhost:27017/emailCertTesting";; // Local MongoDB connection string
 const mongoClient = new MongoClient(uri);
 
 import { Certificate, createNonce, MasterCertificate, Utils, verifyNonce } from '@bsv/sdk'
@@ -105,7 +105,6 @@ export const signCertificate: CertifierRoute = {
       )
 
       // Check encrypted fields and decrypt them
-      console.log(`REQ BODY TYPE ${req.body.type}`)
       const selectedCertificate = certificateTypes[req.body.type]
       if (!selectedCertificate) {
         return res.status(400).json({
@@ -124,14 +123,15 @@ export const signCertificate: CertifierRoute = {
           description: 'One or more expected certificate fields is missing or invalid.'
         })
       }
+
       await mongoClient.connect();
       const certifacteCollection = mongoClient.db('emailCertTesting').collection('certificates');
-
+      console.log({certifacteCollection})
       const dbCertificate = await certifacteCollection.findOne({
         identityKey: req.auth.identityKey,
-        certificateType: selectedCertificate
+        certificateType: req.body.type
       });
-
+      console.log(dbCertificate)
       if (!dbCertificate) {
         return res.status(400).json({
           status: 'error',
@@ -139,18 +139,17 @@ export const signCertificate: CertifierRoute = {
           description: 'Certificate could not be found in the database'
         })
       }
-
-      if (!dbCertificate.certificateFields.every((x: string) => !!decryptedFields[x])) {
+      console.log({decryptedFields})
+      if (JSON.stringify(certificateFields) === JSON.stringify(decryptedFields)) {
         return res.status(400).json({
           status: 'error',
           code: 'ERR_EXPECTED_FIELDS',
-          description: 'One or more expected certificate fields is missing or invalid.'
-        })
+          description: 'Certificate fields do not match decrypted fields'
+        });
       }
 
       // Create a revocation outpoint (logic omitted for simplicity)
       const revocationTxid = '0000000000000000000000000000000000000000000000000000000000000000'
-
       const signedCertificate = new Certificate(
         type,
         serialNumber,
@@ -162,22 +161,21 @@ export const signCertificate: CertifierRoute = {
 
       await signedCertificate.sign(server.wallet)
 
-      // Save certificate data and revocation key derivation information
-      // await saveCertificate(req.auth?.identityKey, signedCertificate, "not_supported", "not_supported", "not_supported")
       const signedCertificatesCollection = mongoClient.db('emailCertTesting').collection('signedCertificates')
 
-      // TODO: save cert
       await signedCertificatesCollection.updateOne(
-            { identityKey: req.auth?.identityKey, signedCertificate: signedCertificatesCollection }, // Updating certificate if already there
+            { identityKey: req.auth?.identityKey, serialNumber: signedCertificate.serialNumber }, // Updating certificate if already there
             {
               $set: {
                 identityKey: req.auth?.identityKey,
-                signedCertificate: signedCertificatesCollection,
-                createdAt: new Date()  // Optionally update the createdAt timestamp
+                serialNumber: signedCertificate.serialNumber,
+                signedCertificate: JSON.stringify(signedCertificate),
+                createdAt: new Date()  
               }
             },
             { upsert: true }  // This ensures a new document is created if no match is found
           );
+
       // Returns signed cert to the requester
       return res.status(200).json({
         certificate: signedCertificate,
