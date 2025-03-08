@@ -1,11 +1,11 @@
 const { MongoClient } = require('mongodb')
-const { saveVerificationProof } = require('../utils/databaseHelpers')
 // const getPhotoDataAsBuffer = require('../utils/getPhotoDataAsBuffer')
 // const { getVerificationInfo } = require('../utils/getVerificationInfo')
 // const { publishFile } = require('nanostore-publisher')
 import { Request, Response } from 'express';
 import { UserData } from '../types/checkVerification'
-const { getUserDiscordData } = require('../utils/discordCertHelper')
+import { CertifierRoute } from '../CertifierServer';
+// const { getUserDiscordData } = require('../utils/discordCertHelper')
 const axios = require('axios')
 
 const {
@@ -20,7 +20,7 @@ const {
 let userData: UserData
 let verificationType
 
-module.exports = {
+export const checkVerification: CertifierRoute = {
   type: 'post',
   path: '/checkVerification',
   summary: 'Submit KYC verification proof for the current user',
@@ -45,7 +45,7 @@ module.exports = {
       verificationType = req.body.preVerifiedData.verificationType
 
       if (req.body.preVerifiedData.verificationType === 'Discord') {
-        userData = await getUserDiscordData(req.body.preVerifiedData.accessCode)
+        // userData = await getUserDiscordData(req.body.preVerifiedData.accessCode)
       } else if (req.body.preVerifiedData.verificationType === 'phoneNumber') {
         userData = { phoneNumber: req.body.preVerifiedData.phoneNumber }
       } else if (req.body.preVerifiedData.verificationType === 'X') {
@@ -67,6 +67,5 @@ module.exports = {
         description: 'An internal error has occurred.'
       })
     }
-  },
-  verificationType
+  }
 }

@@ -2,7 +2,7 @@
   "name": "socialcert-backend",
   "version": "0.1.28",
   "description": "Provides a signed certificate for an array of social platforms, email, and phone.",
-  "main": "index.js",
+  "main": "out/index.js",
   "devDependencies": {
     "@types/express": "^5.0.0",
     "@types/node": "^22.13.9",
@@ -13,8 +13,8 @@
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node src/index.js",
-    "build": "node scripts/build.js"
+    "start": "node out/index.js",
+    "build": "tsc"
   },
   "repository": {
     "type": "git",
@@ -29,11 +29,11 @@
   "dependencies": {
     "@bsv/auth-express-middleware": "^1.0.12",
     "@bsv/wallet-toolbox": "^1.1.62",
+    "axios": "^1.8.2",
     "dotenv": "^16.4.4",
     "express": "^4.18.2",
     "json-stable-stringify": "^1.0.1",
     "mongodb": "^5.7.0",
-    "nanostore-publisher": "^0.2.36",
     "oauth-1.0a": "^2.2.6",
     "prettyjson": "^1.2.1",
     "twilio": "^5.0.2"

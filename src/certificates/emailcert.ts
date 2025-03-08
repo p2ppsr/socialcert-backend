@@ -12,13 +12,13 @@
 //
 // The purpose of this certificate is to server as a self-certified external identity to
 // be associated with the certificate owner.
-const certificateType = 'exOl3KM0dIJ04EW5pZgbZmPag6MdJXd3/a1enmUU/BA='
+export const certificateType = 'exOl3KM0dIJ04EW5pZgbZmPag6MdJXd3/a1enmUU/BA='
 const certificateDefinition = {
   email: 'test@example.net'
 }
 const certificateFields = Object.keys(certificateDefinition)
 
-module.exports = {
+export const emailcert: { certificateType: string, certificateDefinition: Record<string, string>, certificateFields: string[] } = {
   certificateType,
   certificateDefinition,
   certificateFields

@@ -1,11 +1,10 @@
-import * as checkVerification from './checkVerification';
-import * as signCertificate from './signCertificate';
-import * as revokeCertificate from './revokeCertificate';
-import * as handleEmailVerification from './handleEmailVerification';
+export * from './checkVerification';
+export * from './revokeCertificate';
+export * from './handleEmailVerification';
+export * from './signCertificate'
 
-export default [
-  checkVerification,
-  signCertificate,
-  revokeCertificate,
-  handleEmailVerification,
-];
+// export default [
+//   checkVerification,
+//   revokeCertificate,
+//   handleEmailVerification,
+// ];

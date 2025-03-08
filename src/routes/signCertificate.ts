@@ -1,17 +1,11 @@
 import { Response } from 'express'
-import { AuthenticatedRequest } from '../types/AuthriteTyping';
 import { MongoClient } from 'mongodb'
-const { decryptCertificateFields, certifierSignCheckArgs, certifierCreateSignedCertificate } = require('authrite-utils')
-const { saveCertificate, getVerificationProof } = require('../utils/databaseHelpers')
-const { Ninja } = require('ninja-base')
-const pushdrop = require('pushdrop')
-const { getPaymentPrivateKey } = require('sendover')
-const bsv = require('babbage-bsv')
-const crypto = require('crypto')
 const uri = "mongodb://localhost:27017"; // Local MongoDB connection string
 const mongoClient = new MongoClient(uri);
 
-
+import { Certificate, createNonce, MasterCertificate, Utils, verifyNonce } from '@bsv/sdk'
+import { CertifierRoute } from '../CertifierServer';
+import { AuthRequest } from '@bsv/auth-express-middleware';
 
 const {
   SERVER_PRIVATE_KEY,
@@ -36,7 +30,7 @@ const {
  *
  * As an optional next step, the confirmCertificate route can be used.
  */
-module.exports = {
+export const signCertificate: CertifierRoute = {
   type: 'post',
   path: '/signCertificate',
   summary: 'Validate and sign a new certificate. Requested as a side effect of AuthriteClient.ficate.',
@@ -76,39 +70,42 @@ module.exports = {
     certifier: '025384871bedffb233fdb0b4899285d73d0f0a2b9ad18062a062c01c8bdb2f720a',
     signature: '3045022100a613d9a094fac52779b29c40ba6c82e8deb047e45bda90f9b15e976286d2e3a7022017f4dead5f9241f31f47e7c4bfac6f052067a98021281394a5bc859c5fb251cc'
   },
-  func: async (req: AuthenticatedRequest, res: Response) => {
+  func: async (req: AuthRequest, res: Response, server: any) => {
     try {
-      // const checkError = certifierSignCheckArgs({
-      //   ...req.body,
-      //   certifierPrivateKey,
-      //   certificateType
-      // })
-      // if (checkError) {
-      //   return res.status(400).json({
-      //     status: 'error',
-      //     ...checkError
-      //   })
-      // }
 
-      // Save the sender's identityKey as the subject of the certificate
-      const userIdentitykey = req.auth?.identityKey
-      req.body.subject = userIdentitykey
+      if (!req.auth) {
+        return res.status(400).json({
+          status: 'error',
+          description: 'User not authenticated!'
+        })
+      }
 
-      // NOTE: There is no certificate at this point yet! Maybe there should be an identifier that the user data came from this server?
-      // Make sure this certificate has been verified
-      // const results = await getVerificationProof(req.authrite.identityKey)
-      // Make sure a validated certificate has been added
-      // if (!results || !results.certificate) {
-      //   return res.status(400).json({
-      //     status: 'error',
-      //     code: 'ERR_CERTIFICATE_NOT_VALID',
-      //     description: 'The identity certificate information has not been verified or is expired!'
-      //   })
-      // }
+      const { clientNonce, type, fields, masterKeyring } = req.body
+      // Verify the client actually created the provided nonce
+      await verifyNonce(clientNonce, server.wallet, req.auth.identityKey)
+
+      // Server creates a random nonce that the client can verify
+      const serverNonce = await createNonce(server.wallet, req.auth.identityKey)
+      // The server computes a serial number from the client and server nonces
+      const { hmac } = await server.wallet.createHmac({
+        data: Utils.toArray(clientNonce + serverNonce, 'base64'),
+        protocolID: [2, 'certificate issuance'],
+        keyID: serverNonce + clientNonce,
+        counterparty: req.auth.identityKey
+      })
+      const serialNumber = Utils.toBase64(hmac)
+
+
+      // Decrypt certificate fields and verify them before signing
+      const decryptedFields = await MasterCertificate.decryptFields(
+        server.wallet,
+        masterKeyring,
+        fields,
+        req.auth.identityKey
+      )
 
       // Check encrypted fields and decrypt them
       console.log(`REQ BODY TYPE ${req.body.type}`)
-      const decryptedFields = await decryptCertificateFields(req.body, req.body.keyring, certifierPrivateKey)
       const selectedCertificate = certificateTypes[req.body.type]
       if (!selectedCertificate) {
         return res.status(400).json({
@@ -129,14 +126,13 @@ module.exports = {
       }
       await mongoClient.connect();
       const certifacteCollection = mongoClient.db('emailCertTesting').collection('certificates');
-    
+
       const dbCertificate = await certifacteCollection.findOne({
-        userIdentitykey,      
-        selectedCertificate    
+        identityKey: req.auth.identityKey,
+        certificateType: selectedCertificate
       });
 
-      if(!dbCertificate)
-      {
+      if (!dbCertificate) {
         return res.status(400).json({
           status: 'error',
           code: 'ERR_EXPECTED_FIELDS',
@@ -144,31 +140,37 @@ module.exports = {
         })
       }
 
-    if (!dbCertificate.certificateFields.every((x: string) => !!decryptedFields[x])) {
-      return res.status(400).json({
-        status: 'error',
-        code: 'ERR_EXPECTED_FIELDS',
-        description: 'One or more expected certificate fields is missing or invalid.'
-      })
-    }    
+      if (!dbCertificate.certificateFields.every((x: string) => !!decryptedFields[x])) {
+        return res.status(400).json({
+          status: 'error',
+          code: 'ERR_EXPECTED_FIELDS',
+          description: 'One or more expected certificate fields is missing or invalid.'
+        })
+      }
 
-      // Set the revocation outpoint for this certificate
-      const revocationOutpoint = '0000000000000000000000000000000000000000000000000000000000000000.0'
-      console.log(`REQ.BODY.TYPE ${req.body.type}`)
-      console.log(`VREVOCATION OUT POINT: ${revocationOutpoint}`)
-      console.log(`CERTIFIER PRIVATE KEY: ${certifierPrivateKey}`)
-      const certificate = certifierCreateSignedCertificate({
-        ...req.body,
-        revocationOutpoint,
-        certifierPrivateKey,
-        certificateType: req.body.type
-      })
+      // Create a revocation outpoint (logic omitted for simplicity)
+      const revocationTxid = '0000000000000000000000000000000000000000000000000000000000000000'
+
+      const signedCertificate = new Certificate(
+        type,
+        serialNumber,
+        req.auth.identityKey,
+        ((await server.wallet.getPublicKey({ identityKey: true })).publicKey),
+        `${revocationTxid}.0`,
+        fields
+      )
+
+      await signedCertificate.sign(server.wallet)
 
       // Save certificate data and revocation key derivation information
-      await saveCertificate(req.auth?.identityKey, certificate, "not_supported", "not_supported", "not_supported")
+      // await saveCertificate(req.auth?.identityKey, signedCertificate, "not_supported", "not_supported", "not_supported")
+      // TODO: save cert
 
       // Returns signed cert to the requester
-      return res.status(200).json(certificate)
+      return res.status(200).json({
+        certificate: signedCertificate,
+        serverNonce
+      })
     } catch (e) {
       console.error(e)
       return res.status(500).json({

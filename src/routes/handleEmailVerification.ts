@@ -2,16 +2,18 @@ require('dotenv').config()
 import { MongoClient } from "mongodb";
 import { Response } from 'express';
 import { AuthRequest } from '@bsv/auth-express-middleware'
-import {VerificationCheck } from "../types/twilio"
+import { VerificationCheck } from "../types/twilio"
 import { certificateType } from "../certificates/emailcert";
+import { CertifierRoute } from "../CertifierServer";
 const uri = "mongodb://localhost:27017"; // Local MongoDB connection string
 const mongoClient = new MongoClient(uri);
-const accountSid = process.env.TWILIO_ACCOUNT_SID
-const authToken = process.env.TWILIO_AUTH_TOKEN
-const serviceSid = process.env.TWILIO_SERVICE_SID
-const client = require('twilio')(accountSid, authToken)
+const accountSid = process.env.TWILIO_ACCOUNT_SID as string
+const authToken = process.env.TWILIO_AUTH_TOKEN as string
+const serviceSid = process.env.TWILIO_SERVICE_SID as string
+import twilio from 'twilio'
+const client = twilio(accountSid, authToken)
 
-module.exports = {
+export const checkEmailVerification: CertifierRoute = {
   type: 'post',
   path: '/handleEmailVerification',
   summary: 'Submit KYC verification proof for the current user',
@@ -34,7 +36,7 @@ module.exports = {
   }
 }
 
-async function sendEmailFunc (req: AuthRequest, res: Response) {
+async function sendEmailFunc(req: AuthRequest, res: Response) {
   try {
     const email = req.body.email
     client.verify.v2.services(serviceSid)
@@ -53,7 +55,7 @@ async function sendEmailFunc (req: AuthRequest, res: Response) {
   }
 }
 
-async function verifyCode (req: AuthRequest, res: Response) {
+async function verifyCode(req: AuthRequest, res: Response) {
   console.log('RIGHT BEFORE TRYING TO VERIFY CODE')
   client.verify.v2.services(serviceSid)
     .verificationChecks
@@ -61,31 +63,31 @@ async function verifyCode (req: AuthRequest, res: Response) {
     .then((verificationCheck: VerificationCheck) => {
       if (verificationCheck.status === 'approved') {
         // Ugly async wrapping
-      async ()=>{
-        await mongoClient.connect();
-        const db = mongoClient.db('emailCertTesting'); 
-        const certificationsCollection = db.collection('certificates'); 
+        async () => {
+          await mongoClient.connect();
+          const db = mongoClient.db('emailCertTesting');
+          const certificationsCollection = db.collection('certificates');
 
-        await certificationsCollection.updateOne(
-          { identityKey: req.auth?.identityKey, certificateType: certificateType }, // Updating certificate if already there
-          {
-            $set: {
-              identityKey: req.auth?.identityKey,
-              certificateType: certificateType,
-              certificateFields: {
-                email:req.body.verifyEmail,
-              },
-              createdAt: new Date()  // Optionally update the createdAt timestamp
-            }
-          },
-          { upsert: true }  // This ensures a new document is created if no match is found
-        );
+          await certificationsCollection.updateOne(
+            { identityKey: req.auth?.identityKey, certificateType: certificateType }, // Updating certificate if already there
+            {
+              $set: {
+                identityKey: req.auth?.identityKey,
+                certificateType: certificateType,
+                certificateFields: {
+                  email: req.body.verifyEmail,
+                },
+                createdAt: new Date()  // Optionally update the createdAt timestamp
+              }
+            },
+            { upsert: true }  // This ensures a new document is created if no match is found
+          );
 
-      // If stuck look at coolcert repo
-        // in index.ts add a createwallet look line 26 in coolcert server code on index.ts
-        return res.status(200).json({
-          verificationStatus: true
-        })
+          // If stuck look at coolcert repo
+          // in index.ts add a createwallet look line 26 in coolcert server code on index.ts
+          return res.status(200).json({
+            verificationStatus: true
+          })
         }
       } else {
         console.log('INSIDE FAILED')
