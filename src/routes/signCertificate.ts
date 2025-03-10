@@ -148,7 +148,6 @@ export const signCertificate: CertifierRoute = {
         });
       }
 
-      // Create a revocation outpoint (logic omitted for simplicity)
       const revocationTxid = '0000000000000000000000000000000000000000000000000000000000000000'
       const signedCertificate = new Certificate(
         type,

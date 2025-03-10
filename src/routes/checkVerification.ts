@@ -1,11 +1,7 @@
 const { MongoClient } = require('mongodb')
-// const getPhotoDataAsBuffer = require('../utils/getPhotoDataAsBuffer')
-// const { getVerificationInfo } = require('../utils/getVerificationInfo')
-// const { publishFile } = require('nanostore-publisher')
 import { Request, Response } from 'express';
 import { UserData } from '../types/checkVerification'
 import { CertifierRoute } from '../CertifierServer';
-// const { getUserDiscordData } = require('../utils/discordCertHelper')
 const axios = require('axios')
 
 const {

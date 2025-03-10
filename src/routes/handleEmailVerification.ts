@@ -28,10 +28,8 @@ export const checkEmailVerification: CertifierRoute = {
   },
   func: async (req: AuthRequest, res: Response) => {
     if (req.body.funcAction === 'sendEmail') {
-      console.log("INSIDE SEND EMAIL FUNC");
       sendEmailFunc(req, res)
     } else if (req.body.funcAction === 'verifyCode') {
-      console.log('INSIDE VERIFY CODE IF STATEMENT')
       verifyCode(req, res)
     }
   }
@@ -58,13 +56,11 @@ async function sendEmailFunc(req: AuthRequest, res: Response) {
 
 async function verifyCode(req: AuthRequest, res: Response) {
   console.log('RIGHT BEFORE TRYING TO VERIFY CODE')
-  // client.verify.v2.services(serviceSid)
-  //   .verificationChecks
-  //   .create({ to: req.body.verifyEmail, code: req.body.verificationCode })
-  //   .then((verificationCheck: VerificationCheck) => {
-      if (true) {
-        // Ugly async wrapping
-
+  client.verify.v2.services(serviceSid)
+    .verificationChecks
+    .create({ to: req.body.verifyEmail, code: req.body.verificationCode })
+    .then((verificationCheck: VerificationCheck) => {
+      if (verificationCheck.status === 'approved') {
        (async () => {
         console.log("Inside If")
 
@@ -88,8 +84,6 @@ async function verifyCode(req: AuthRequest, res: Response) {
             { upsert: true }  // This ensures a new document is created if no match is found
           );
 
-          // If stuck look at coolcert repo
-          // in index.ts add a createwallet look line 26 in coolcert server code on index.ts
           return res.status(200).json({
            verificationStatus: true
           })
@@ -100,5 +94,5 @@ async function verifyCode(req: AuthRequest, res: Response) {
           verificationStatus: false
         })
       }
-    //})
+    })
 }
