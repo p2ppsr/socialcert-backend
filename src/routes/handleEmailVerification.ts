@@ -5,6 +5,7 @@ import { AuthRequest } from '@bsv/auth-express-middleware'
 import { VerificationCheck } from "../types/twilio"
 import { certificateType } from "../certificates/emailcert";
 import { CertifierRoute } from "../CertifierServer";
+import { writeVerifiedCertifcate } from '../utils/databaseHelpers'
 const uri = "mongodb://localhost:27017/emailCertTesting"; // Local MongoDB connection string
 const mongoClient = new MongoClient(uri);
 const accountSid = process.env.TWILIO_ACCOUNT_SID as string
@@ -61,33 +62,9 @@ async function verifyCode(req: AuthRequest, res: Response) {
     .create({ to: req.body.verifyEmail, code: req.body.verificationCode })
     .then((verificationCheck: VerificationCheck) => {
       if (verificationCheck.status === 'approved') {
-       (async () => {
-        console.log("Inside If")
-
-          await mongoClient.connect();
-          console.log("After mongoclient connect")
-          const db = mongoClient.db('emailCertTesting');
-          const certificationsCollection = db.collection('certificates');
-
-          await certificationsCollection.updateOne(
-            { identityKey: req.auth?.identityKey, certificateType: certificateType }, // Updating certificate if already there
-            {
-              $set: {
-                identityKey: req.auth?.identityKey,
-                certificateType: certificateType,
-                certificateFields: {
-                  email: req.body.verifyEmail,
-                },
-                createdAt: new Date()  // Optionally update the createdAt timestamp
-              }
-            },
-            { upsert: true }  // This ensures a new document is created if no match is found
-          );
-
-          return res.status(200).json({
-           verificationStatus: true
-          })
-        })();
+      (async () =>{
+        await writeVerifiedCertifcate;
+      })() 
       } else {
         console.log('INSIDE FAILED')
         return res.status(200).json({

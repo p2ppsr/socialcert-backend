@@ -6,6 +6,7 @@ const mongoClient = new MongoClient(uri);
 import { Certificate, createNonce, MasterCertificate, Utils, verifyNonce } from '@bsv/sdk'
 import { CertifierRoute } from '../CertifierServer';
 import { AuthRequest } from '@bsv/auth-express-middleware';
+import { writeSignedCertificate } from '../utils/databaseHelpers'
 
 const {
   SERVER_PRIVATE_KEY,
@@ -79,7 +80,7 @@ export const signCertificate: CertifierRoute = {
           description: 'User not authenticated!'
         })
       }
-
+      console.log("INSIDE SIGN CERTIFICATE")
       const { clientNonce, type, fields, masterKeyring } = req.body
       // Verify the client actually created the provided nonce
       await verifyNonce(clientNonce, server.wallet, req.auth.identityKey)
@@ -123,7 +124,7 @@ export const signCertificate: CertifierRoute = {
           description: 'One or more expected certificate fields is missing or invalid.'
         })
       }
-
+      console.log("BEFORE MONO DB CHECK")
       await mongoClient.connect();
       const certifacteCollection = mongoClient.db('emailCertTesting').collection('certificates');
       console.log({certifacteCollection})
@@ -147,7 +148,7 @@ export const signCertificate: CertifierRoute = {
           description: 'Certificate fields do not match decrypted fields'
         });
       }
-
+      console.log("AFTER MONGO DB CHECK")
       const revocationTxid = '0000000000000000000000000000000000000000000000000000000000000000'
       const signedCertificate = new Certificate(
         type,
@@ -160,22 +161,8 @@ export const signCertificate: CertifierRoute = {
 
       await signedCertificate.sign(server.wallet)
 
-      const signedCertificatesCollection = mongoClient.db('emailCertTesting').collection('signedCertificates')
+      await writeSignedCertificate(req.auth?.identityKey, signedCertificate.serialNumber, JSON.stringify(signedCertificate))
 
-      await signedCertificatesCollection.updateOne(
-            { identityKey: req.auth?.identityKey, serialNumber: signedCertificate.serialNumber }, // Updating certificate if already there
-            {
-              $set: {
-                identityKey: req.auth?.identityKey,
-                serialNumber: signedCertificate.serialNumber,
-                signedCertificate: JSON.stringify(signedCertificate),
-                createdAt: new Date()  
-              }
-            },
-            { upsert: true }  // This ensures a new document is created if no match is found
-          );
-
-      // Returns signed cert to the requester
       return res.status(200).json({
         certificate: signedCertificate,
         serverNonce

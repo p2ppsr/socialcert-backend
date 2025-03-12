@@ -27,75 +27,49 @@ async function getMongoClient() {
   return mongoClient
 }
 
-const saveCertificate = async (identityKey, certificate, tx, derivationPrefix, derivationSuffix) => {
+const writeVerifiedCertifcate = (async (identityKey, certificateType, certificateFields) => {
   const mongoClient = await getMongoClient()
 
-  // Inserts certified data for created user
-  await mongoClient.db(`${DB_NAME}`).collection('certifications').insertOne({
-    identityKey,
-    certificate,
-    tx,
-    derivationPrefix,
-    derivationSuffix,
-    createdAt: new Date()
+  mongoClient.db(`${DB_NAME}`).collection('certificates');
+
+  await certificationsCollection.updateOne(
+    { identityKey:identityKey, certificateType: certificateType }, // Updating certificate if already there
+    {
+      $set: {
+        identityKey: identityKey,
+        certificateType: certificateType,
+        certificateFields: {
+          email: req.body.verifyEmail,
+        },
+        createdAt: new Date()  // Optionally update the createdAt timestamp
+      }
+    },
+    { upsert: true }  // This ensures a new document is created if no match is found
+  );
+
+  return res.status(200).json({
+   verificationStatus: true,
+   certType: certificateType
   })
-}
+})();
 
-const getVerificationProof = async (identityKey) => {
+const writeSignedCertificate = async (identityKey, serialNumber, signedCertificate) =>{
   const mongoClient = await getMongoClient()
 
-  // Filter by identity key and identityKey
-  const filter = {
-    identityKey
-  }
+   mongoClient.db(`${DB_NAME}`).collection('signedCertificates')
 
-  // Only select relevant data
-  const projection = {
-    certificate: 1
-  }
-
-  // Return the matching result
-  return await mongoClient.db(`${DB_NAME}`).collection('certifications').findOne(filter, { projection })
-}
-
-const getRevocationData = async (identityKey, serialNumber) => {
-  const mongoClient = await getMongoClient()
-
-  // Filter by identity key or certificate serialNumber
-  const filter = {
-    $or: [
-      { identityKey },
-      { 'certificate.serialNumber': serialNumber }
-    ]
-  }
-
-  // Only select relevant data
-  const projection = {
-    tx: 1,
-    derivationPrefix: 1,
-    derivationSuffix: 1,
-    'certificate.serialNumber': 1,
-    _id: 1
-  }
-
-  // Return the matching result
-  return await mongoClient.db(`${DB_NAME}`).collection('certifications').findOne(filter, { projection })
-}
-
-const insertRevocationRecord = async (_id, tx) => {
-  const mongoClient = await getMongoClient()
-  // Add the revocation tx to the revoked certificate
-  const filter = {
-    _id
-  }
-  const update = {
-    $set: {
-      revocationTx: tx,
-      updatedAt: new Date()
-    }
-  }
-
-  await mongoClient.db(`${DB_NAME}`).collection('certifications').updateOne(filter, update)
+  await mongoClient.updateOne(
+        { identityKey: identityKey, serialNumber: serialNumber }, // Updating certificate if already there
+        {
+          $set: {
+            identityKey: identityKey,
+            serialNumber: serialNumber,
+            signedCertificate: signedCertificate,
+            createdAt: new Date()  
+          }
+        },
+        { upsert: true }  // This ensures a new document is creatd if no match is found
+      );
 }
 
 const deleteUserData = async (identityKey) => {
@@ -118,11 +92,10 @@ const loadCertificate = async (identityKey) => {
 
 module.exports = {
   saveCertificate,
-  getVerificationProof,
-  getRevocationData,
   loadCertificate,
   deleteUserData,
-  insertRevocationRecord,
   connectToMongoDB,
-  getMongoClient
+  getMongoClient,
+  writeVerifiedCertifcate,
+  writeSignedCertificate,
 }

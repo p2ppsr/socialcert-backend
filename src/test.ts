@@ -4,7 +4,7 @@ import {WalletClient, AuthFetch} from "@bsv/sdk"
 let verifyEmail = "scottindiegrizzell@gmail.com"
 const data = { verifyEmail, funcAction: "verifyCode", verificationCode: '361881' }
 const clientWallet = new WalletClient('json-api', 'localhost')
-  const identityKey = await clientWallet.getPublicKey({ identityKey: true })
+const identityKey = await clientWallet.getPublicKey({ identityKey: true })
   console.log(identityKey)
 
   // Cert test
