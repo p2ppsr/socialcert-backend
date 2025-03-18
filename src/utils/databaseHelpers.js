@@ -54,7 +54,7 @@ const writeVerifiedAttributes = (async (identityKey, certificateType, certificat
 const writeSignedCertificate = async (identityKey, serialNumber, signedCertificate) =>{
   const mongoClient = await getMongoClient()
 
-   mongoClient.db(`${DB_NAME}`).collection('certificates')
+   mongoClient.db(`${DB_NAME}`).collection('certifications')
 
   await mongoClient.updateOne(
         { identityKey: identityKey, serialNumber: serialNumber }, // Updating certificate if already there
