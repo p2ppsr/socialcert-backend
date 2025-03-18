@@ -30,7 +30,7 @@ async function getMongoClient() {
 const writeVerifiedCertifcate = (async (identityKey, certificateType, certificateFields) => {
   const mongoClient = await getMongoClient()
 
-  mongoClient.db(`${DB_NAME}`).collection('certificates');
+  mongoClient.db(`${DB_NAME}`).collection('verificationData');
 
   await certificationsCollection.updateOne(
     { identityKey:identityKey, certificateType: certificateType }, // Updating certificate if already there
@@ -56,7 +56,7 @@ const writeVerifiedCertifcate = (async (identityKey, certificateType, certificat
 const writeSignedCertificate = async (identityKey, serialNumber, signedCertificate) =>{
   const mongoClient = await getMongoClient()
 
-   mongoClient.db(`${DB_NAME}`).collection('signedCertificates')
+   mongoClient.db(`${DB_NAME}`).collection('certificates')
 
   await mongoClient.updateOne(
         { identityKey: identityKey, serialNumber: serialNumber }, // Updating certificate if already there

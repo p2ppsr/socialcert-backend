@@ -9,9 +9,10 @@ import { AuthRequest } from '@bsv/auth-express-middleware';
 import { writeSignedCertificate } from '../utils/databaseHelpers'
 
 const {
-  SERVER_PRIVATE_KEY,
-  DOJO_URL
+  NODE_ENV
 } = process.env
+
+const DB_NAME = `${NODE_ENV}_socialcert`
 
 const {
   certifierPrivateKey,
@@ -126,7 +127,7 @@ export const signCertificate: CertifierRoute = {
       }
       console.log("BEFORE MONO DB CHECK")
       await mongoClient.connect();
-      const certifacteCollection = mongoClient.db('emailCertTesting').collection('certificates');
+      const certifacteCollection = mongoClient.db(`${DB_NAME}`).collection('verificationData');
       console.log({certifacteCollection})
       const dbCertificate = await certifacteCollection.findOne({
         identityKey: req.auth.identityKey,
