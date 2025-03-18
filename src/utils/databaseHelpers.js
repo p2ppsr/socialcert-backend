@@ -27,7 +27,7 @@ async function getMongoClient() {
   return mongoClient
 }
 
-const writeVerifiedCertifcate = (async (identityKey, certificateType, certificateFields) => {
+const writeVerifiedAttributes = (async (identityKey, certificateType, certificateFields) => {
   const mongoClient = await getMongoClient()
 
   mongoClient.db(`${DB_NAME}`).collection('verificationData');
@@ -38,9 +38,7 @@ const writeVerifiedCertifcate = (async (identityKey, certificateType, certificat
       $set: {
         identityKey: identityKey,
         certificateType: certificateType,
-        certificateFields: {
-          email: req.body.verifyEmail,
-        },
+        certificateFields: certificateFields,
         createdAt: new Date()  // Optionally update the createdAt timestamp
       }
     },
@@ -96,6 +94,6 @@ module.exports = {
   deleteUserData,
   connectToMongoDB,
   getMongoClient,
-  writeVerifiedCertifcate,
+  writeVerifiedAttributes,
   writeSignedCertificate,
 }

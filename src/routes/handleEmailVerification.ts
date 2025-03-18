@@ -5,7 +5,7 @@ import { AuthRequest } from '@bsv/auth-express-middleware'
 import { VerificationCheck } from "../types/twilio"
 import { certificateType } from "../certificates/emailcert";
 import { CertifierRoute } from "../CertifierServer";
-import { writeVerifiedCertifcate } from '../utils/databaseHelpers'
+import { writeVerifiedAttributes } from '../utils/databaseHelpers'
 const uri = "mongodb://localhost:27017/emailCertTesting"; // Local MongoDB connection string
 const mongoClient = new MongoClient(uri);
 const accountSid = process.env.TWILIO_ACCOUNT_SID as string
@@ -63,7 +63,7 @@ async function verifyCode(req: AuthRequest, res: Response) {
     .then((verificationCheck: VerificationCheck) => {
       if (verificationCheck.status === 'approved') {
       (async () =>{
-        await writeVerifiedCertifcate;
+        await writeVerifiedAttributes;
       })() 
       } else {
         console.log('INSIDE FAILED')
