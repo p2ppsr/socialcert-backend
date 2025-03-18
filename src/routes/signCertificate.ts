@@ -161,7 +161,7 @@ export const signCertificate: CertifierRoute = {
 
       await signedCertificate.sign(server.wallet)
 
-      await writeSignedCertificate(req.auth?.identityKey, signedCertificate.serialNumber, JSON.stringify(signedCertificate))
+      await writeSignedCertificate(req.auth?.identityKey, signedCertificate.serialNumber, signedCertificate)
 
       return res.status(200).json({
         certificate: signedCertificate,
