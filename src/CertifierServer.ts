@@ -57,6 +57,8 @@ export class CertifierServer {
       }
     })
 
+    this.app.use(express.static('public'));
+
     // Configure the auth and payment middleware
     this.app.use(createAuthMiddleware({
       wallet: this.wallet,
