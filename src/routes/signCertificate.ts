@@ -131,7 +131,7 @@ export const signCertificate: CertifierRoute = {
       console.log({ certifacteCollection })
       const dbCertificate = await certifacteCollection.findOne({
         identityKey: req.auth.identityKey,
-        certificateType: req.body.type
+        "verifiedAttributes.email": decryptedFields.email
       });
       console.log(dbCertificate)
       if (!dbCertificate) {
