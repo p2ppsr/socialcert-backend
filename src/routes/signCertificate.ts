@@ -6,7 +6,7 @@ const mongoClient = new MongoClient(uri);
 import { Certificate, createNonce, MasterCertificate, Utils, verifyNonce } from '@bsv/sdk'
 import { CertifierRoute } from '../CertifierServer';
 import { AuthRequest } from '@bsv/auth-express-middleware';
-import { writeSignedCertificate } from '../utils/databaseHelpers'
+import { getMongoClient, writeSignedCertificate } from '../utils/databaseHelpers'
 
 const {
   NODE_ENV
@@ -126,10 +126,9 @@ export const signCertificate: CertifierRoute = {
         })
       }
       console.log("BEFORE MONO DB CHECK")
-      await mongoClient.connect();
-      const certifacteCollection = mongoClient.db(`${DB_NAME}`).collection('verifications');
-      console.log({ certifacteCollection })
-      const dbCertificate = await certifacteCollection.findOne({
+      const client = await getMongoClient()
+      const verifications = client.db(DB_NAME).collection('verifications')
+      const dbCertificate = await verifications.findOne({
         identityKey: req.auth.identityKey,
         "verifiedAttributes.email": decryptedFields.email
       });
