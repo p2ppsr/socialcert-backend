@@ -62,9 +62,19 @@ async function verifyCode(req: AuthRequest, res: Response) {
     .create({ to: req.body.verifyEmail, code: req.body.verificationCode })
     .then((verificationCheck: VerificationCheck) => {
       if (verificationCheck.status === 'approved') {
-      (async () =>{
-        await writeVerifiedAttributes;
-      })() 
+        (async () => {
+          await writeVerifiedAttributes(
+            req.auth.identityKey,
+            {
+              email: req.body.verifyEmail,
+              verificationCode: req.body.verificationCode
+            }
+          )
+          return res.status(200).json({
+            verificationStatus: true,
+            certType: certificateType,
+          })
+        })()
       } else {
         console.log('INSIDE FAILED')
         return res.status(200).json({

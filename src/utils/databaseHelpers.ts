@@ -36,28 +36,22 @@ export async function getMongoClient(): Promise<MongoClient> {
 // Writes verified attributes to the verificationData collection.
 export const writeVerifiedAttributes = async (
   identityKey: string,
-  certificateType: string,
-  certificateFields: any
+  // certificateType: string,
+  verifiedAttributes: any
 ): Promise<any> => {
   const client = await getMongoClient()
-  const collection = client.db(DB_NAME).collection('verificationData')
+  const collection = client.db(DB_NAME).collection('verifications')
   await collection.updateOne(
-    { identityKey, certificateType }, // Update certificate if already exists.
+    { identityKey, verifiedAttributes }, // Update certificate if already exists.
     {
       $set: {
         identityKey,
-        certificateType,
-        certificateFields,
+        verifiedAttributes,
         createdAt: new Date(), // Optionally update the createdAt timestamp.
       },
     },
     { upsert: true } // This ensures a new document is created if no match is found.
   )
-
-  return res.status(200).json({
-    verificationStatus: true,
-    certType: certificateType,
-  })
 }
 
 // Writes a signed certificate to the certifications collection.

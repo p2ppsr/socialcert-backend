@@ -127,8 +127,8 @@ export const signCertificate: CertifierRoute = {
       }
       console.log("BEFORE MONO DB CHECK")
       await mongoClient.connect();
-      const certifacteCollection = mongoClient.db(`${DB_NAME}`).collection('verificationData');
-      console.log({certifacteCollection})
+      const certifacteCollection = mongoClient.db(`${DB_NAME}`).collection('verifications');
+      console.log({ certifacteCollection })
       const dbCertificate = await certifacteCollection.findOne({
         identityKey: req.auth.identityKey,
         certificateType: req.body.type
@@ -141,7 +141,7 @@ export const signCertificate: CertifierRoute = {
           description: 'Certificate could not be found in the database'
         })
       }
-      console.log({decryptedFields})
+      console.log({ decryptedFields })
       if (JSON.stringify(certificateFields) === JSON.stringify(decryptedFields)) {
         return res.status(400).json({
           status: 'error',
