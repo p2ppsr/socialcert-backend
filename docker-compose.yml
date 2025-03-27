@@ -12,7 +12,7 @@ services:
       SERVER_PRIVATE_KEY: '95219e536fc9c3cb54594996d7e3e343bf503598f7bedced738642b73c63f392' # TODO (developer): Use YOUR OWN key. DO NOT leave the default one.
       CERTIFICATE_TYPE_ID: 'z40BOInXkI8m7f/wBrv4MJ09bZfzZbTj2fJqCtONqCY='
       NODE_ENV: development
-      DOJO_URL: 'https://staging-dojo.babbage.systems'
+      WALLET_STORAGE_URL: 'https://staging-dojo.babbage.systems'
       ROUTING_PREFIX: ''
       SIGNIA_DB_CONNECTION: 'mongodb+srv://signia-serverless:FMiuR3xgDEkKSxml@signia-serverless.be2miu7.mongodb.net/?retryWrites=true&w=majority' # TODO: REMOVE BEFORE COMMITING!
       PERSONA_TOKEN: 'persona_sandbox_d6c26d80-63c8-4ade-b094-4270fcaee9b4'
