@@ -34,7 +34,6 @@ jobs:
           HOSTING_DOMAIN: ${{ env.CURRENT_BRANCH == 'production' && secrets.PROD_HOSTING_DOMAIN || secrets.STAGING_HOSTING_DOMAIN }}
           WALLET_STORAGE: ${{ env.CURRENT_BRANCH == 'production' && secrets.PROD_WALLET_STORAGE || secrets.STAGING_WALLET_STORAGE }}
           ROUTING_PREFIX: ''
-          CERTIFICATE_TYPE_ID: ${{ secrets.CERTIFICATE_TYPE_ID  }}
           SIGNIA_DB_CONNECTION: ${{ env.CURRENT_BRANCH == 'production' && secrets.PROD_SIGNIA_DB_CONNECTION || secrets.STAGING_SIGNIA_DB_CONNECTION }}
           DISCORD_API_ENDPOINT:  ${{ secrets.DISCORD_API_ENDPOINT }}
           DISCORD_CLIENT_ID: ${{ secrets.DISCORD_CLIENT_ID }}
