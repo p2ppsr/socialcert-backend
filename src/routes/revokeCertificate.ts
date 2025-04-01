@@ -3,7 +3,7 @@ import { Response } from 'express'
 
 const {
   SERVER_PRIVATE_KEY,
-  DOJO_URL
+  WALLET_STORAGE
 } = process.env
 
 module.exports = {
@@ -51,7 +51,7 @@ module.exports = {
       // const ninja = new Ninja({
       //   privateKey: SERVER_PRIVATE_KEY,
       //   config: {
-      //     dojoURL: DOJO_URL
+      //     dojoURL: WALLET_STORAGE
       //   }
       // })
 
