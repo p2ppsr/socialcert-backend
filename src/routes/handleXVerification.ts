@@ -6,6 +6,9 @@ import axios from 'axios';
 import { getMongoClient, writeVerifiedAttributes } from '../utils/databaseHelpers';
 import { AuthRequest } from '@bsv/auth-express-middleware'
 import { Response } from 'express';
+import { certificateType } from "../certificates/xcert";
+import { CertifierRoute } from "../CertifierServer";
+
 
 const {
   X_API_KEY: oauthConsumerKey,
@@ -29,7 +32,7 @@ interface RequestBody {
   oauthVerifier?: string;
 }
 
-export default {
+export const checkXVerification: CertifierRoute = {
   type: 'post',
   path: '/handleXVerification',
   summary: 'Submit KYC verification proof for the current user',
@@ -154,6 +157,21 @@ async function getUserInfo(accessToken: string, accessTokenSecret: string, res: 
     });
 
     const userInfo = response.data;
+
+    (async () => {
+              await writeVerifiedAttributes(
+                req.auth.identityKey,
+                {
+                  email: req.body.verifyEmail,
+                  verificationCode: req.body.verificationCode
+                }
+              )
+              return res.status(200).json({
+                verificationStatus: true,
+                certType: certificateType,
+              })
+            })()
+
     return res.status(200).json({
       userName: userInfo.screen_name,
       profilePhoto: userInfo.profile_image_url_https
