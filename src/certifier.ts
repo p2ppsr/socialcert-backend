@@ -5,6 +5,7 @@ import { PrivateKey } from '@bsv/sdk'
 // const xcert = require('./certificates/xcert')
 // const emailcert = require('./certificates/emailcert')
 import { emailcert } from './certificates/emailcert'
+import { xcert } from './certificates/xcert'
 
 const certifierPrivateKey = process.env.SERVER_PRIVATE_KEY
 const certifierPublicKey = PrivateKey.fromHex(certifierPrivateKey as string).toPublicKey().toString()
@@ -25,10 +26,10 @@ module.exports = {
     //   definition: phoneverification.certificateDefinition,
     //   fields: phoneverification.certificateFields
     // },
-    // [xcert.certificateType]: {
-    //   definition: xcert.certificateDefinition,
-    //   fields: xcert.certificateFields
-    // },
+    [xcert.certificateType]: {
+      definition: xcert.certificateDefinition,
+      fields: xcert.certificateFields
+    },
     [emailcert.certificateType]: {
       definition: emailcert.certificateDefinition,
       fields: emailcert.certificateFields

@@ -162,20 +162,17 @@ async function getUserInfo(accessToken: string, accessTokenSecret: string, res: 
               await writeVerifiedAttributes(
                 req.auth.identityKey,
                 {
-                  email: req.body.verifyEmail,
-                  verificationCode: req.body.verificationCode
+                  userName: userInfo.screen_name,
+                  profilePhoto: req.body.verificationCode
                 }
               )
               return res.status(200).json({
-                verificationStatus: true,
-                certType: certificateType,
-              })
+                userName: userInfo.screen_name,
+                profilePhoto: userInfo.profile_image_url_https
+              });
             })()
 
-    return res.status(200).json({
-      userName: userInfo.screen_name,
-      profilePhoto: userInfo.profile_image_url_https
-    });
+   
   } catch (error: any) {
     console.error('Error fetching user info:', error.response ? error.response.data : error.message);
     return res.status(500).json({ error: 'An error occurred while fetching user info' });
