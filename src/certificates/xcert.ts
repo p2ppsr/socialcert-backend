@@ -12,15 +12,16 @@
 //
 // The purpose of this certificate is to server as a self-certified external identity to
 // be associated with the certificate owner.
-const certificateType = 'vdDWvftf1H+5+ZprUw123kjHlywH+v20aPQTuXgMpNc='
+export const certificateType = 'vdDWvftf1H+5+ZprUw123kjHlywH+v20aPQTuXgMpNc='
 const certificateDefinition = {
   userName: 'John Doe',
   profilePhoto: 'https://pbs.twimg.com/profile_images/1777441236829491200/JWd4tvYB_normal.jpg'
 }
 const certificateFields = Object.keys(certificateDefinition)
 
-module.exports = {
+export const xcert: { certificateType: string, certificateDefinition: Record<string, string>, certificateFields: string[] } = {
   certificateType,
   certificateDefinition,
   certificateFields
 }
+

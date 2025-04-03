@@ -81,7 +81,8 @@ export class CertifierServer {
       // routes.verifyAttributes,
       routes.signCertificate,
       routes.checkVerification,
-      routes.checkEmailVerification
+      routes.checkEmailVerification,
+      routes.checkXVerification
       // routes.revokeCertificate
     ]
 
