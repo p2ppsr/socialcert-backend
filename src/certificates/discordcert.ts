@@ -19,7 +19,7 @@ const certificateDefinition = {
 }
 const certificateFields = Object.keys(certificateDefinition)
 
-module.exports = {
+export const discordcert: { certificateType: string, certificateDefinition: Record<string, string>, certificateFields: string[] } = {
   certificateType,
   certificateDefinition,
   certificateFields

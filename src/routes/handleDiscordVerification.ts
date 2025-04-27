@@ -1,21 +1,13 @@
 require('dotenv').config()
 const axios = require('axios')
-const { MongoClient } = require('mongodb')
 import { Response } from 'express';
 import { CertifierRoute } from "../CertifierServer";
 import { AuthRequest } from '@bsv/auth-express-middleware'
 import { writeVerifiedAttributes } from '../utils/databaseHelpers'
-
-
-const {
-  NANOSTORE_URL,
-  SERVER_PRIVATE_KEY,
-  WALLET_STORAGE,
-  DISCORD_API_ENDPOINT,
-  DISCORD_CLIENT_ID,
-  DISCORD_CLIENT_SECRET,
-  DISCORD_REDIRECT_URI
-} = process.env
+const DISCORD_API_ENDPOINT = process.env.DISCORD_API_ENDPOINT as string
+const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID as string
+const DISCORD_CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET as string
+const DISCORD_REDIRECT_URI = process.env.DISCORD_REDIRECT_URI as string
 
 export const checkDiscordVerification: CertifierRoute = {
   type: 'post',
