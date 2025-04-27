@@ -36,7 +36,6 @@ export async function getMongoClient(): Promise<MongoClient> {
 // Writes verified attributes to the verificationData collection.
 export const writeVerifiedAttributes = async (
   identityKey: string,
-  // certificateType: string,
   verifiedAttributes: any
 ): Promise<any> => {
   const client = await getMongoClient()
@@ -47,7 +46,7 @@ export const writeVerifiedAttributes = async (
       $set: {
         identityKey,
         verifiedAttributes,
-        createdAt: new Date(), // Optionally update the createdAt timestamp.
+        createdAt: new Date(), 
       },
     },
     { upsert: true } // This ensures a new document is created if no match is found.

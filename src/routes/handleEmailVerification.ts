@@ -6,8 +6,6 @@ import { VerificationCheck } from "../types/twilio"
 import { certificateType } from "../certificates/emailcert";
 import { CertifierRoute } from "../CertifierServer";
 import { writeVerifiedAttributes } from '../utils/databaseHelpers'
-const uri = "mongodb://localhost:27017/emailCertTesting"; // Local MongoDB connection string
-const mongoClient = new MongoClient(uri);
 const accountSid = process.env.TWILIO_ACCOUNT_SID as string
 const authToken = process.env.TWILIO_AUTH_TOKEN as string
 const serviceSid = process.env.TWILIO_SERVICE_SID as string
