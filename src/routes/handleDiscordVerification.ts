@@ -37,7 +37,7 @@ export const checkDiscordVerification: CertifierRoute = {
   }
 }
 
-async function getUserDiscordData (req, res) {
+async function getUserDiscordData (req: AuthRequest, res: Response) {
   const data = new URLSearchParams({
     grant_type: 'authorization_code',
     code: req.body.accessCode,
@@ -76,12 +76,12 @@ async function getUserDiscordData (req, res) {
     })
   }
 
-  const userData = {
+  const userData  = {
     userName: dataResponse.data.user.username,
     profilePhoto: `https://cdn.discordapp.com/avatars/${dataResponse.data.user.id}/${dataResponse.data.user.avatar}.png`
   }
 
-  return userData
+  return userData as any
 
 }
 
