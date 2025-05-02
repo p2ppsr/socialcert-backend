@@ -12,7 +12,7 @@
 //
 // The purpose of this certificate is to server as a self-certified external identity to
 // be associated with the certificate owner.
-const certificateType = '2TgqRC35B1zehGmB21xveZNc7i5iqHc0uxMb+1NMPW4='
+export const certificateType = '2TgqRC35B1zehGmB21xveZNc7i5iqHc0uxMb+1NMPW4='
 const certificateDefinition = {
   userName: 'John Discord',
   profilePhoto: 'https://cdn.discordapp.com/avatars/${id}/${avatar}.png' // Profile picture of discord account hosted by discord's CDN
