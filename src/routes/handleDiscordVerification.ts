@@ -88,7 +88,7 @@ async function getUserDiscordData(req: AuthRequest, res: Response) {
     });
 
     const access_token = authResponse.data.access_token;
-    console.log(`Access token received: ${access_token?.substring(0, 5)}...`);
+    console.log(`Access token received: ${access_token}`);
     
     console.log(`Requesting user data from Discord API`);
     const dataResponse = await axios.get(`${DISCORD_API_ENDPOINT}/oauth2/@me`, { 
@@ -121,8 +121,8 @@ async function getUserDiscordData(req: AuthRequest, res: Response) {
     );
     
     return res.status(200).json({
-      status: 'verified',
-      userData: userData
+        userName: userData.userName,
+        profilePhoto: userData.profilePhoto
     });
 
   } catch (error) {
