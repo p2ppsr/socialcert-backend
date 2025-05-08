@@ -6,6 +6,7 @@ import { PrivateKey } from '@bsv/sdk'
 // const emailcert = require('./certificates/emailcert')
 import { emailcert } from './certificates/emailcert'
 import { xcert } from './certificates/xcert'
+import { discordcert } from './certificates/discordcert'
 
 const certifierPrivateKey = process.env.SERVER_PRIVATE_KEY
 const certifierPublicKey = PrivateKey.fromHex(certifierPrivateKey as string).toPublicKey().toString()
@@ -18,10 +19,10 @@ module.exports = {
   certifierPrivateKey,
   certifierPublicKey,
   certificateTypes: {
-    // [discordcert.certificateType]: {
-    //   definition: discordcert.certificateDefinition,
-    //   fields: discordcert.certificateFields
-    // },
+    [discordcert.certificateType]: {
+      definition: discordcert.certificateDefinition,
+      fields: discordcert.certificateFields
+    },
     // [phoneverification.certificateType]: {
     //   definition: phoneverification.certificateDefinition,
     //   fields: phoneverification.certificateFields
