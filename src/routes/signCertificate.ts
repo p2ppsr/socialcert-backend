@@ -1,28 +1,26 @@
 import { Response } from 'express'
-import { MongoClient } from 'mongodb'
-const uri = "mongodb://localhost:27017/emailCertTesting";; // Local MongoDB connection string
-const mongoClient = new MongoClient(uri);
-
-import { Certificate, createNonce, MasterCertificate, Utils, verifyNonce } from '@bsv/sdk'
+import { Certificate, CreateActionArgs, createNonce, MasterCertificate, PushDrop, Random, TopicBroadcaster, Transaction, Utils, verifyNonce } from '@bsv/sdk'
 import { CertifierRoute } from '../CertifierServer';
 import { AuthRequest } from '@bsv/auth-express-middleware';
 import { getMongoClient, writeSignedCertificate } from '../utils/databaseHelpers'
 
 const {
-  NODE_ENV
+  NODE_ENV,
+  BSV_NETWORK = 'mainnet'
 } = process.env
+
+// Type assertion for the network
+const network = BSV_NETWORK as 'mainnet' | 'testnet'
 
 const DB_NAME = `${NODE_ENV}_socialcert`
 
 const {
-  certifierPrivateKey,
-  certificateTypes, // Array of all certifacte types and they're corresponding defintion and fields
-  certificateType,
+  certificateTypes, // Array of all certificate types and they're corresponding definition and fields
   certificateFields
 } = require('../certifier')
 
 /*
- * This route handles signCertificate for the ficate protocol.
+ * This route handles signCertificate for the socialcert protocol.
  *
  * It validates the certificate signing request (CSR) received from the client,
  * decrypts and validates the field values,
@@ -149,7 +147,75 @@ export const signCertificate: CertifierRoute = {
         });
       }
       console.log("AFTER MONGO DB CHECK")
-      const revocationTxid = '0000000000000000000000000000000000000000000000000000000000000000'
+
+      // Note: We can add revocation tags as needed.
+      // const revocationOutputTags: string[] = []
+      // for (const [fieldName, fieldValue] of Object.entries(decryptedFields)) {
+      //   // Create tags to find this output based on metadata, while ensuring privacy
+      //   // Ex. { firstName: 'John', lastName: 'Smith' }
+      //   const { hmac: hashedField } = await server.wallet.createHmac({
+      //     protocolID: [2, 'revocation output tagging'],
+      //     keyID: `${fieldName}`,
+      //     counterparty: req.auth.identityKey,
+      //     data: Utils.toArray(fieldValue, 'utf8')
+      //   })
+      //   revocationOutputTags.push(`${fieldName} ${Utils.toBase64(hashedField)}`)
+      // }
+
+      // Create a DID token for the revocation outpoint
+      // Use random data for key derivation to prevent key-reuse
+      const derivationPrefix = Utils.toBase64(Random(10))
+      const derivationSuffix = Utils.toBase64(Random(10))
+      // Note: The revocation output could contain encrypted metadata the certifier wants to keep track of
+      // TODO: Make this 1 of 2 so that the subject can revoke the certificate as well.
+      const lockingScript = await new PushDrop(server.wallet).lock(
+        [Utils.toArray(serialNumber)],
+        [2, 'did'],
+        `${derivationPrefix} ${derivationSuffix}`,
+        req.auth.identityKey
+      )
+
+      // Create certificate revocation output
+      const args: CreateActionArgs = {
+        description: 'New certificate revocation output',
+        outputs: [{
+          lockingScript: lockingScript.toHex(),
+          satoshis: 1,
+          outputDescription: 'Certificate revocation output',
+          basket: 'certificate revocation',
+          tags: [`certificate-revocation-for-${req.auth.identityKey}`],
+          customInstructions: JSON.stringify({
+            derivationPrefix,
+            derivationSuffix
+          })
+        }],
+        options: {
+          randomizeOutputs: false, acceptDelayedBroadcast: false
+        }
+      }
+
+      // Broadcast the did record to the overlay network
+      const { tx, txid: revocationTxid } = await server.wallet.createAction(args)
+      const broadcaster = new TopicBroadcaster(['tm_did'], {
+        networkPreset: network
+      })
+
+      if (tx === undefined) {
+        return res.status(500).json({
+          status: 'error',
+          description: 'DID transaction could not be created'
+        })
+      }
+
+      const response = await broadcaster.broadcast(Transaction.fromAtomicBEEF(tx))
+
+      if (response.status !== 'success') {
+        return res.status(500).json({
+          status: 'error',
+          description: 'DID transaction could not be broadcasted'
+        })
+      }
+
       const signedCertificate = new Certificate(
         type,
         serialNumber,
