@@ -170,7 +170,7 @@ export const signCertificate: CertifierRoute = {
       // TODO: Make this 1 of 2 so that the subject can revoke the certificate as well.
       const lockingScript = await new PushDrop(server.wallet).lock(
         [Utils.toArray(serialNumber)],
-        [2, 'did'],
+        [2, 'did token'],
         `${derivationPrefix} ${derivationSuffix}`,
         req.auth.identityKey
       )
