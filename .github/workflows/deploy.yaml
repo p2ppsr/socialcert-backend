@@ -1,79 +1,81 @@
+# .github/workflows/deploy.yaml  ── SocialCert-backend
 name: Deployment
 on:
   push:
-    branches: [ master, production ]
+    branches:
+      - master
+      - production
 
+# ── static values
 env:
-  # Branch-aware settings
-  CURRENT_BRANCH: ${{ github.ref_name == 'production' && 'production' || 'master' }}
   GCR_HOST: us.gcr.io
   GOOGLE_PROJECT_ID: computing-with-integrity
   GCR_IMAGE_NAME: socialcert-backend
+  # branch helper (same ternary you had before)
+  CURRENT_BRANCH: ${{ github.ref_name == 'production' && 'production' || 'master' }}
 
 jobs:
   build:
-    name: Deploy
+    name: Build → Push → Deploy
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout
-      - uses: actions/checkout@v2
-        with:
-          ref: ${{ env.CURRENT_BRANCH }}
+    # ─────── 1. Checkout the correct ref ──────────────────────────────────
+    - uses: actions/checkout@v4
+      with:
+        ref: ${{ env.CURRENT_BRANCH }}
 
-      # 2. Auth for build / push
-      - id: auth-docker
-        uses: google-github-actions/auth@v1
-        with:
-          credentials_json: ${{ secrets.DOCKER_REGISTRY_PUSH_KEY }}
-          export_default_credentials: true
+    # ─────── 2. Authenticate so Docker can push to GCR ────────────────────
+    - name: Auth (push)
+      uses: google-github-actions/auth@v1
+      with:
+        credentials_json: ${{ secrets.DOCKER_REGISTRY_PUSH_KEY }}
 
-      # 3. Docker Buildx + login
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/login-action@v3
-        with:
-          registry: ${{ env.GCR_HOST }}
-          username: oauth2accesstoken
-          password: ${{ steps.auth-docker.outputs.access_token }}
+    - name: Configure Docker for GCR
+      run: gcloud --quiet auth configure-docker ${{ env.GCR_HOST }}
 
-      # 4. Build & push
-      - uses: docker/build-push-action@v5
-        with:
-          context: .
-          push: true
-          tags: ${{ env.GCR_HOST }}/${{ env.GOOGLE_PROJECT_ID }}/${{ env.GCR_IMAGE_NAME }}:${{ env.CURRENT_BRANCH }}-${{ github.sha }}
+    # ─────── 3. Build and push the image ──────────────────────────────────
+    - name: Build and push image
+      id: build
+      env:
+        IMAGE_URI: ${{ env.GCR_HOST }}/${{ env.GOOGLE_PROJECT_ID }}/${{ env.GCR_IMAGE_NAME }}:${{ env.CURRENT_BRANCH }}-${{ github.sha }}
+      run: |
+        set -e
+        docker build -t "${IMAGE_URI}" .
+        docker push  "${IMAGE_URI}"
+        echo "IMAGE_URI=${IMAGE_URI}" >> "$GITHUB_OUTPUT"
 
-      # 5. Create Cloud Run service YAML
-      - name: "Create service description file"
-        run: "./scripts/mkenv.sh service.${{ env.CURRENT_BRANCH }}.yaml"
-        env:
-          IMAGE: "${{ env.GCR_HOST }}/${{ env.GOOGLE_PROJECT_ID }}/${{ env.GCR_IMAGE_NAME }}:${{ env.CURRENT_BRANCH }}-${{ github.sha }}"
-          SERVICE: ${{ env.CURRENT_BRANCH == 'production' && 'prod-socialcert-backend' || 'staging-socialcert-backend' }}
-          NODE_ENV: ${{ env.CURRENT_BRANCH == 'production' && 'production' || 'staging' }}
-          SERVER_PRIVATE_KEY: ${{ env.CURRENT_BRANCH == 'production' && secrets.PROD_SERVER_PRIVATE_KEY || secrets.STAGING_SERVER_PRIVATE_KEY }}
-          HOSTING_DOMAIN:  ${{ env.CURRENT_BRANCH == 'production' && secrets.PROD_HOSTING_DOMAIN || secrets.STAGING_HOSTING_DOMAIN }}
-          WALLET_STORAGE:   ${{ env.CURRENT_BRANCH == 'production' && secrets.PROD_WALLET_STORAGE || secrets.STAGING_WALLET_STORAGE }}
-          ROUTING_PREFIX: ''
-          SIGNIA_DB_CONNECTION: ${{ env.CURRENT_BRANCH == 'production' && secrets.PROD_SIGNIA_DB_CONNECTION || secrets.STAGING_SIGNIA_DB_CONNECTION }}
-          DISCORD_API_ENDPOINT: ${{ secrets.DISCORD_API_ENDPOINT }}
-          DISCORD_CLIENT_ID:    ${{ secrets.DISCORD_CLIENT_ID }}
-          DISCORD_CLIENT_SECRET: ${{ secrets.DISCORD_CLIENT_SECRET }}
-          DISCORD_REDIRECT_URI: ${{ env.CURRENT_BRANCH == 'production' && secrets.PROD_DISCORD_REDIRECT_URI || secrets.STAGING_DISCORD_REDIRECT_URI }}
-          TWILIO_ACCOUNT_SID:   ${{ secrets.TWILIO_ACCOUNT_SID }}
-          TWILIO_AUTH_TOKEN:    ${{ secrets.TWILIO_AUTH_TOKEN }}
-          TWILIO_SERVICE_SID:   ${{ secrets.TWILIO_SERVICE_SID }}
-          X_API_KEY:            ${{ secrets.X_API_KEY }}
-          X_API_SECRET:         ${{ secrets.X_API_SECRET }}
-          X_REDIRECT_URI:       ${{ env.CURRENT_BRANCH == 'production' && secrets.PROD_X_REDIRECT_URI || secrets.STAGING_X_REDIRECT_URI }}
+    # ─────── 4. Create the Cloud Run service descriptor ───────────────────
+    - name: Create service description file
+      run: ./scripts/mkenv.sh service.${{ env.CURRENT_BRANCH }}.yaml
+      env:
+        IMAGE: ${{ steps.build.outputs.IMAGE_URI }}
+        SERVICE: ${{ env.CURRENT_BRANCH == 'production' && 'prod-socialcert-backend' || 'staging-socialcert-backend' }}
+        NODE_ENV: ${{ env.CURRENT_BRANCH == 'production' && 'production' || 'staging' }}
+        SERVER_PRIVATE_KEY: ${{ env.CURRENT_BRANCH == 'production' && secrets.PROD_SERVER_PRIVATE_KEY || secrets.STAGING_SERVER_PRIVATE_KEY }}
+        HOSTING_DOMAIN:   ${{ env.CURRENT_BRANCH == 'production' && secrets.PROD_HOSTING_DOMAIN   || secrets.STAGING_HOSTING_DOMAIN }}
+        WALLET_STORAGE:   ${{ env.CURRENT_BRANCH == 'production' && secrets.PROD_WALLET_STORAGE   || secrets.STAGING_WALLET_STORAGE }}
+        ROUTING_PREFIX: ''
+        SIGNIA_DB_CONNECTION: ${{ env.CURRENT_BRANCH == 'production' && secrets.PROD_SIGNIA_DB_CONNECTION || secrets.STAGING_SIGNIA_DB_CONNECTION }}
+        DISCORD_API_ENDPOINT: ${{ secrets.DISCORD_API_ENDPOINT }}
+        DISCORD_CLIENT_ID:    ${{ secrets.DISCORD_CLIENT_ID }}
+        DISCORD_CLIENT_SECRET:${{ secrets.DISCORD_CLIENT_SECRET }}
+        DISCORD_REDIRECT_URI: ${{ env.CURRENT_BRANCH == 'production' && secrets.PROD_DISCORD_REDIRECT_URI || secrets.STAGING_DISCORD_REDIRECT_URI }}
+        TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
+        TWILIO_AUTH_TOKEN:  ${{ secrets.TWILIO_AUTH_TOKEN }}
+        TWILIO_SERVICE_SID: ${{ secrets.TWILIO_SERVICE_SID }}
+        X_API_KEY:      ${{ secrets.X_API_KEY }}
+        X_API_SECRET:   ${{ secrets.X_API_SECRET }}
+        X_REDIRECT_URI: ${{ env.CURRENT_BRANCH == 'production' && secrets.PROD_X_REDIRECT_URI || secrets.STAGING_X_REDIRECT_URI }}
 
-      # 6. Auth for deploy
-      - id: auth-deploy
-        uses: google-github-actions/auth@v1
-        with:
-          credentials_json: ${{ secrets.gcp_deploy_creds }}
-          export_default_credentials: true
+    # ─────── 5. Authenticate for deployment ───────────────────────────────
+    - name: Auth (deploy)
+      uses: google-github-actions/auth@v1
+      with:
+        credentials_json: ${{ secrets.gcp_deploy_creds }}
 
-      # 7. Deploy to Cloud Run
-      - uses: google-github-actions/deploy-cloudrun@v1
-        with:
-          metadata: "service.${{ env.CURRENT_BRANCH }}.yaml"
+    # ─────── 6. Deploy to Cloud Run ────────────────────────────────────────
+    - name: Deploy to Cloud Run
+      uses: google-github-actions/deploy-cloudrun@v1
+      with:
+        metadata: service.${{ env.CURRENT_BRANCH }}.yaml
