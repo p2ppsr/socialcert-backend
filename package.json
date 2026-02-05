@@ -27,9 +27,9 @@
   },
   "homepage": "https://github.com/p2ppsr/socialcert-backend#readme",
   "dependencies": {
-    "@bsv/auth-express-middleware": "^1.2.2",
-    "@bsv/sdk": "^1.6.19",
-    "@bsv/wallet-toolbox": "^1.5.18",
+    "@bsv/auth-express-middleware": "^2.0.2",
+    "@bsv/sdk": "^2.0.0",
+    "@bsv/wallet-toolbox": "^1.8.3",
     "axios": "^1.8.2",
     "crypto": "^1.0.1",
     "dotenv": "^16.4.4",
