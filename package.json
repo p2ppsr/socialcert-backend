@@ -21,7 +21,7 @@
     "url": "git+https://github.com/p2ppsr/socialcert-backend.git"
   },
   "author": "Peer-to-peer Privacy Systems Research, LLC",
-  "license": "PROPRIETARY",
+  "license": "Open BSV License",
   "bugs": {
     "url": "https://github.com/p2ppsr/socialcert-backend/issues"
   },
