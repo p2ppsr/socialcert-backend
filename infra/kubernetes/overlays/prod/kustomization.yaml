@@ -1,0 +1,44 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: socialcert-backend-prod
+
+resources:
+  - namespace.yaml
+  - ../../base
+
+images:
+  - name: socialcert-backend
+    newName: registry.cars-operator-system.svc.cluster.local:5000/p2ppsr/socialcert-backend
+    newTag: local
+
+patches:
+  - target:
+      kind: Ingress
+      name: socialcert-backend
+    patch: |-
+      - op: replace
+        path: /spec/tls/0/hosts
+        value:
+          - backend.socialcert.net
+      - op: replace
+        path: /spec/rules
+        value:
+          - host: backend.socialcert.net
+            http:
+              paths:
+                - path: /
+                  pathType: Prefix
+                  backend:
+                    service:
+                      name: socialcert-backend
+                      port:
+                        number: 8080
+  - target:
+      kind: Certificate
+      name: socialcert-backend-tls
+    patch: |-
+      - op: replace
+        path: /spec/dnsNames
+        value:
+          - backend.socialcert.net

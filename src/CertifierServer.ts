@@ -59,6 +59,10 @@ export class CertifierServer {
 
     this.app.use(express.static('public'));
 
+    this.app.get('/healthz', (req: Request, res: Response) => {
+      res.status(200).json({ status: 'ok' })
+    })
+
     // Configure the auth and payment middleware
     this.app.use(createAuthMiddleware({
       wallet: this.wallet,
@@ -120,4 +124,3 @@ export class CertifierServer {
     }
   }
 }
-

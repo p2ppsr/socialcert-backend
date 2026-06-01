@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: socialcert-backend-config
+  labels:
+    app.kubernetes.io/name: socialcert-backend
+    app.kubernetes.io/component: runtime-config
+data:
+  NODE_ENV: "production"
+  BSV_NETWORK: "main"
+  HTTP_PORT: "8080"
+  HOSTING_DOMAIN: "https://backend.socialcert.net"
+  ROUTING_PREFIX: ""
+  WALLET_STORAGE_URL: "http://wallet-storage.wallet-storage-prod.svc.cluster.local:8080"
+  WALLET_STORAGE: "http://wallet-storage.wallet-storage-prod.svc.cluster.local:8080"
+  DISCORD_API_ENDPOINT: "https://discord.com/api/v10"
+  DISCORD_REDIRECT_URI: "https://socialcert.net/discordVerification"
+  X_REDIRECT_URI: "https://socialcert.net/XVerification"

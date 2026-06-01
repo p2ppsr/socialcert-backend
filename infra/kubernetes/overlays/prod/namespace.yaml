@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: socialcert-backend-prod
+  labels:
+    app.kubernetes.io/name: socialcert-backend
+    app.kubernetes.io/part-of: socialcert
+    environment: prod

@@ -1,0 +1,27 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: socialcert-backend
+  labels:
+    app.kubernetes.io/name: socialcert-backend
+    app.kubernetes.io/component: ingress
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts: []
+      secretName: socialcert-backend-tls
+  rules: []
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: socialcert-backend-tls
+  labels:
+    app.kubernetes.io/name: socialcert-backend
+    app.kubernetes.io/component: tls
+spec:
+  secretName: socialcert-backend-tls
+  dnsNames: []
+  issuerRef:
+    kind: ClusterIssuer
+    name: letsencrypt-nginx

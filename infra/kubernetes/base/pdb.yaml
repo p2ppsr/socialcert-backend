@@ -1,0 +1,13 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: socialcert-backend
+  labels:
+    app.kubernetes.io/name: socialcert-backend
+    app.kubernetes.io/component: api
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: socialcert-backend
+      app.kubernetes.io/component: api
