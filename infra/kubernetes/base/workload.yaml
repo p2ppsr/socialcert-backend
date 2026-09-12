@@ -21,6 +21,8 @@ spec:
       labels:
         app.kubernetes.io/name: socialcert-backend
         app.kubernetes.io/component: api
+      annotations:
+        network-ops.babbage.systems/runtime-config: wallet-storage-https-20260912
     spec:
       terminationGracePeriodSeconds: 30
       affinity:
