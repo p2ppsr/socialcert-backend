@@ -1,17 +1,3 @@
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: socialcert-backend
-  labels:
-    app.kubernetes.io/name: socialcert-backend
-    app.kubernetes.io/component: ingress
-spec:
-  ingressClassName: nginx
-  tls:
-    - hosts: []
-      secretName: socialcert-backend-tls
-  rules: []
----
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:

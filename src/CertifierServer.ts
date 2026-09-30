@@ -3,6 +3,7 @@ import express, { Request, Response } from 'express'
 import { AuthMiddlewareOptions, createAuthMiddleware } from '@bsv/auth-express-middleware'
 import { createPaymentMiddleware } from '@bsv/payment-express-middleware'
 import * as routes from './routes'
+import { issuerMetadata } from './routes/metadata'
 import { AuthRequest } from '@bsv/auth-express-middleware'
 
 export interface CertifierServerOptions {
@@ -19,7 +20,6 @@ export interface CertifierRoute {
   parameters?: object
   exampleBody?: object
   exampleResponse: object
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   func: (req: AuthRequest, res: Response, server: CertifierServer) => Promise<any>
 }
 
@@ -63,11 +63,20 @@ export class CertifierServer {
       res.status(200).json({ status: 'ok' })
     })
 
+    this.app.get('/metadata', async (_req: Request, res: Response) => {
+      try {
+        res.setHeader('Cache-Control', 'no-store')
+        res.status(200).json(await issuerMetadata(this.wallet))
+      } catch {
+        res.status(503).json({ status: 'error', code: 'ERR_ISSUER_UNAVAILABLE', description: 'Issuer information is unavailable. Try again later.' })
+      }
+    })
+
     // Configure the auth and payment middleware
     this.app.use(createAuthMiddleware({
       wallet: this.wallet,
-      logger: console,
-      logLevel: "debug"
+      logger: Object.assign(Object.create(console), { error: () => console.error('Authentication request failed'), warn: () => {}, info: () => {}, debug: () => {}, log: () => {} }),
+      logLevel: 'error'
     }))
     if (this.monetize) {
       this.app.use(
@@ -93,7 +102,10 @@ export class CertifierServer {
 
     for (const route of theRoutes) {
       this.app[route.type](`${route.path}`, async (req: Request, res: Response) => {
-        return route.func(req, res, this)
+        try { return await route.func(req, res, this) }
+        catch {
+          if (!res.headersSent) return res.status(503).json({ status: 'error', code: 'ERR_DEPENDENCY', description: 'The service is temporarily unavailable.' })
+        }
       })
     }
   }

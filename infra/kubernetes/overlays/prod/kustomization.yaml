@@ -14,27 +14,6 @@ images:
 
 patches:
   - target:
-      kind: Ingress
-      name: socialcert-backend
-    patch: |-
-      - op: replace
-        path: /spec/tls/0/hosts
-        value:
-          - backend.socialcert.net
-      - op: replace
-        path: /spec/rules
-        value:
-          - host: backend.socialcert.net
-            http:
-              paths:
-                - path: /
-                  pathType: Prefix
-                  backend:
-                    service:
-                      name: socialcert-backend
-                      port:
-                        number: 8080
-  - target:
       kind: Certificate
       name: socialcert-backend-tls
     patch: |-

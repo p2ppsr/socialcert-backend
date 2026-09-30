@@ -19,22 +19,33 @@ registry_pull="${REGISTRY_PULL:-registry.cars-operator-system.svc.cluster.local:
 push_image="${registry_push}/p2ppsr/socialcert-backend:${image_tag}"
 pull_image="${registry_pull}/p2ppsr/socialcert-backend:${image_tag}"
 
-docker build -t "${push_image}" .
+docker build --build-arg SOURCE_COMMIT="${source_sha}" -t "${push_image}" .
 docker push "${push_image}"
+
+# Pin the pushed content, rather than asking Kubernetes to resolve a mutable tag.
+image_digest="$(docker image inspect "${push_image}" --format '{{index .RepoDigests 0}}')"
+image_digest="${image_digest##*@}"
+if [[ ! "${image_digest}" =~ ^sha256:[a-f0-9]{64}$ ]]; then
+  echo 'Unable to establish the pushed image digest' >&2
+  exit 1
+fi
+immutable_image="${registry_pull}/p2ppsr/socialcert-backend@${image_digest}"
 
 cat > release-manifest.json <<EOF
 {
   "source_sha": "${source_sha}",
   "environment": "prod",
   "image_tag": "${image_tag}",
-  "image": "${pull_image}"
+  "image": "${immutable_image}",
+  "image_digest": "${image_digest}"
 }
 EOF
 
 if [[ -n "${GITHUB_OUTPUT:-}" ]]; then
   {
     printf 'image_tag=%s\n' "${image_tag}"
-    printf 'image=%s\n' "${pull_image}"
+    printf 'image=%s\n' "${immutable_image}"
+    printf 'image_digest=%s\n' "${image_digest}"
   } >> "${GITHUB_OUTPUT}"
 fi
 

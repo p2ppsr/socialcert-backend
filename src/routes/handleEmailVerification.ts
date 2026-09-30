@@ -1,83 +1,38 @@
-require('dotenv').config()
-import { MongoClient } from "mongodb";
-import { Response } from 'express';
-import { AuthRequest } from '@bsv/auth-express-middleware'
-import { VerificationCheck } from "../types/twilio"
-import { certificateType } from "../certificates/emailcert";
-import { CertifierRoute } from "../CertifierServer";
-import { writeVerifiedAttributes } from '../utils/databaseHelpers'
-const accountSid = process.env.TWILIO_ACCOUNT_SID as string
-const authToken = process.env.TWILIO_AUTH_TOKEN as string
-const serviceSid = process.env.TWILIO_SERVICE_SID as string
 import twilio from 'twilio'
-const client = twilio(accountSid, authToken)
+import RequestClient from 'twilio/lib/base/RequestClient'
+import type { CertifierRoute } from '../CertifierServer'
+import { certificateType } from '../certificates/emailcert'
+import { PROVIDER_TIMEOUT_MS, validAttributes } from '../certifier'
+import { writeVerifiedAttributes } from '../utils/databaseHelpers'
+import { requireSubject, requireString, respondError, RouteError } from '../utils/routeErrors'
 
-export const checkEmailVerification: CertifierRoute = {
-  type: 'post',
-  path: '/handleEmailVerification',
-  summary: 'Submit KYC verification proof for the current user',
-  parameters: {
-    email: {
-      email: 'Code exchanged for authorization token from Discord' // TODO: Write docuentation
-    },
-    certificateFields: {}
-  },
-  exampleResponse: {
-    status: 'verified | notVerified'
-  },
-  func: async (req: AuthRequest, res: Response) => {
-    if (req.body.funcAction === 'sendEmail') {
-      sendEmailFunc(req, res)
-    } else if (req.body.funcAction === 'verifyCode') {
-      verifyCode(req, res)
+const defaultProvider = () => twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN, { httpClient: new RequestClient({ timeout: PROVIDER_TIMEOUT_MS }) })
+
+export function createEmailVerification(dependencies = { provider: defaultProvider, writeVerifiedAttributes }): CertifierRoute {
+  return {
+    type: 'post', path: '/handleEmailVerification', summary: 'Verify access to a mailbox.',
+    exampleResponse: { verificationStatus: true, certType: certificateType },
+    func: async (req, res) => {
+      try {
+        const subject = requireSubject(req)
+        const action = req.body?.funcAction
+        if (action !== 'sendEmail' && action !== 'verifyCode') throw new RouteError(400, 'ERR_ACTION', 'Choose a supported Email action.')
+        const email = requireString(action === 'sendEmail' ? req.body.email : req.body.verifyEmail, 'email address', 254)
+        if (!validAttributes(certificateType, { email })) throw new RouteError(400, 'ERR_INPUT', 'A valid email address is required.')
+        const service = dependencies.provider().verify.v2.services(process.env.TWILIO_SERVICE_SID)
+        if (action === 'sendEmail') {
+          const result = await service.verifications.create({ to: email, channel: 'email' })
+          if (result.status !== 'pending' || result.to !== email) throw new RouteError(502, 'ERR_DELIVERY', 'The provider did not accept email delivery. Try again.')
+          return res.status(200).json({ emailSentStatus: true, sentEmail: email })
+        }
+        const code = requireString(req.body.verificationCode, 'verification code', 16)
+        const result = await service.verificationChecks.create({ to: email, code })
+        if (result.status !== 'approved' || result.to !== email) return res.status(200).json({ verificationStatus: false })
+        await dependencies.writeVerifiedAttributes(subject, certificateType, { email })
+        return res.status(200).json({ verificationStatus: true, certType: certificateType })
+      } catch (error) { return respondError(res, error) }
     }
   }
 }
 
-async function sendEmailFunc(req: AuthRequest, res: Response) {
-  try {
-    const email = req.body.email
-    client.verify.v2.services(serviceSid)
-      .verifications
-      .create({ to: email, channel: 'email' })
-    return res.status(200).json({
-      emailSentStatus: true,
-      sentEmail: email
-    })
-  } catch (e) {
-    console.error(e)
-    res.status(500).json({
-      textSentStatus: false,
-      code: 'ERR_INTERNAL'
-    })
-  }
-}
-
-async function verifyCode(req: AuthRequest, res: Response) {
-  console.log('RIGHT BEFORE TRYING TO VERIFY CODE')
-  client.verify.v2.services(serviceSid)
-    .verificationChecks
-    .create({ to: req.body.verifyEmail, code: req.body.verificationCode })
-    .then((verificationCheck: VerificationCheck) => {
-      if (verificationCheck.status === 'approved') {
-        (async () => {
-          await writeVerifiedAttributes(
-            req.auth.identityKey,
-            {
-              email: req.body.verifyEmail,
-              verificationCode: req.body.verificationCode
-            }
-          )
-          return res.status(200).json({
-            verificationStatus: true,
-            certType: certificateType,
-          })
-        })()
-      } else {
-        console.log('INSIDE FAILED')
-        return res.status(200).json({
-          verificationStatus: false
-        })
-      }
-    })
-}
+export const checkEmailVerification = createEmailVerification()

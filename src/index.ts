@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import * as dotenv from 'dotenv'
 import { CertifierServer, CertifierServerOptions } from './CertifierServer'
 import { Setup } from '@bsv/wallet-toolbox'
@@ -44,7 +43,7 @@ async function setupCertifierServer(): Promise<{
       server
     }
   } catch (error) {
-    console.error('Error setting up Wallet Storage and Monitor:', error)
+    console.error('Issuer wallet setup failed')
     throw error
   }
 }
@@ -55,6 +54,6 @@ async function setupCertifierServer(): Promise<{
     const context = await setupCertifierServer()
     context.server.start()
   } catch (error) {
-    console.error('Error starting server:', error)
+    console.error('Certifier server startup failed')
   }
-})().catch(e => console.error(e))
+})().catch(() => console.error('Certifier server startup failed'))

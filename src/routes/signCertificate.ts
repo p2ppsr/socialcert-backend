@@ -1,179 +1,71 @@
-import { Response } from 'express'
-import { MongoClient } from 'mongodb'
-const uri = "mongodb://localhost:27017/emailCertTesting";; // Local MongoDB connection string
-const mongoClient = new MongoClient(uri);
-
+import { createHash } from 'crypto'
 import { Certificate, createNonce, MasterCertificate, Utils, verifyNonce } from '@bsv/sdk'
-import { CertifierRoute } from '../CertifierServer';
-import { AuthRequest } from '@bsv/auth-express-middleware';
-import { getMongoClient, writeSignedCertificate } from '../utils/databaseHelpers'
+import type { CertifierRoute } from '../CertifierServer'
+import { certificateTypes, hasExactFields, validAttributes, VERIFICATION_MAX_AGE_MS } from '../certifier'
+import { beginIssuance, completeIssuance, getIssuance, findVerifiedAttributes, writeSignedCertificate } from '../utils/databaseHelpers'
+import { requireString, requireSubject, respondError, RouteError } from '../utils/routeErrors'
 
-const {
-  NODE_ENV
-} = process.env
+function canonical(value: any): string {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return `{${Object.keys(value).sort().map(key => `${JSON.stringify(key)}:${canonical(value[key])}`).join(',')}}`
+  }
+  return JSON.stringify(value)
+}
 
-const DB_NAME = `${NODE_ENV}_socialcert`
-
-const {
-  certifierPrivateKey,
-  certificateTypes, // Array of all certifacte types and they're corresponding defintion and fields
-  certificateType,
-  certificateFields
-} = require('../certifier')
-
-/*
- * This route handles signCertificate for the ficate protocol.
- *
- * It validates the certificate signing request (CSR) received from the client,
- * decrypts and validates the field values,
- * and signs the certificate and its encrypted field values.
- *
- * The validated and signed certificate is returned to the client where the client saves their copy.
- *
- * As an optional next step, the confirmCertificate route can be used.
- */
-export const signCertificate: CertifierRoute = {
-  type: 'post',
-  path: '/signCertificate',
-  summary: 'Validate and sign a new certificate. Requested as a side effect of AuthriteClient.ficate.',
-  exampleBody: {
-    messageType: 'certificateSigningRequest',
-    type: 'jVNgF8+rifnz00856b4TkThCAvfiUE4p+t/aHYl1u0c=',
-    clientNonce: 'VhQ3UUGl4L76T9v3M2YLd/Es25CEwAAoGTowblLtM3s=',
-    serverSerialNonce: 'BCJDJ1Bf1nu4qrE9j27lEZLxEEQ/meWESfHuX2vGlGQ=',
-    serverValidationNonce: 'H2/nAFdua/kktwXmYBn/MMgbfE9ckT3zEB6xzKhx7EM=',
-    validationKey: 'i0P2MiTG/gt1Q0aUjAfmUp0i9vIq8YEzC5FAYPzE1PU=',
-    serialNumber: 'zFpvOxvuewvvUnmE4DncNHELvlTUVs0bVOK/Z9KR3tc=',
-    fields: {
-      domain: '4Rp/1H7RKPE5zxhzIM5C098sRpvxRlfugVKum6spOGMQ15JBaAh+wntQuxa656JPh3iQ88nDQhqdjzE=',
-      identity: 'LZzi8GCRF4SjU63lTorT9ej/Nb8MhW1hASeiJSYT7VOO+pMXJXVingKc+3+ZSW82oIl6BA==',
-      when: 'flSOcvWx+MSunYkGeBRkTlj9aDlHxYADecf3Lr13gh/ndrJtouvB+3/75o3C4jpwG2550nxWAHBgR6s5oW+K5PDzKj9G1nPN',
-      stake: '1Y4Z1a216atKFQOrUeU+xz8j4PdbD9bIZblHeKMjJNcI1MZYVP0KO6D0LCN0w7A66Pwx2g=='
-    },
-    keyring: {
-      domain: 'onytj0JwhbzNZIhyurV51fPuHV7EL+HtcABrlFTw9kKO49sUQW46QZyH68lk5rTG3FzVJ2ciO1gH1O+frqvwYWzOQPlt5W9WI8IKQUDfuY4=',
-      identity: '6gwVIU2mfA7Nxv25xeHUUAM2UPR2alFELrRZv64BgzkHhyvn/Lp7242GIn31kk3+1pQkAjTWJBId62qMuCw5futNxlrEtlJqRmj2KhXkw/c=',
-      when: 'TuY8JppuF5BwFRnUdx/CYpRjnUZgxlYqUMrqE6FtMZdy3Kg5SHHnoHK4o9tjoMZE4Ef62v5CQE4z3ONz09r3iTaiWWPL7D9afnEzwkIMzV4=',
-      stake: 'Eb8Nc9euJNuXNDRH4/50EQBbSRWWEJ5AvJKB/BFHNWcGIljSt1jE2RMQJmJPXi/OkaQuJuT0CGduPDlh3WbBtBztWXPzxcgdIifNpkV9Cp4='
-    }
-  },
-  exampleResponse: {
-    type: 'jVNgF8+rifnz00856b4TkThCAvfiUE4p+t/aHYl1u0c=',
-    subject: '02a1c81d78f5c404fd34c418525ba4a3b52be35328c30e67234bfcf30eb8a064d8',
-    validationKey: 'ONQPCHi7Kvus7VqrbZCYHB6zTi70U6JV+hLafN9emc8=',
-    serialNumber: 'C9JwOFjAqOVgLi+lK7HpHlxHyYtNNN/Fgp9SJmfikh0=',
-    fields: {
-      domain: '0qfi4dzxZ/+tdiDViZXOPSOSo38hHNpH89+01Rt1JaCldL+zFHhkhcYt5XO5Bd7z3yUt1zP+Sn0hq64=',
-      identity: 'f6euJ2qlRS3VRyCY1qD2fcdloUBLsDr98gqNyv/7QzKjUKo2gYQ11mzFGB/lxqAbifL4IQ==',
-      when: 'kppntXMUk035dZpTWgshdGqJPcSBvgaUG/qYEtKgOAmsNIe0wndEkUeMVqvyo5RuIrbAspbEpY3dn+J2U7HvRtmCNR9ZxEEJ',
-      stake: 'cVfowEAzvbFbAq6xIYcqi0yosFzUIcWWzCIyV0S53nMa//7JVJgZyATANog7absKajq6Qw=='
-    },
-    revocationOutpoint: '000000000000000000000000000000000000000000000000000000000000000000000000',
-    certifier: '025384871bedffb233fdb0b4899285d73d0f0a2b9ad18062a062c01c8bdb2f720a',
-    signature: '3045022100a613d9a094fac52779b29c40ba6c82e8deb047e45bda90f9b15e976286d2e3a7022017f4dead5f9241f31f47e7c4bfac6f052067a98021281394a5bc859c5fb251cc'
-  },
-  func: async (req: AuthRequest, res: Response, server: any) => {
-    try {
-
-      if (!req.auth) {
-        return res.status(400).json({
-          status: 'error',
-          description: 'User not authenticated!'
+export function createSignCertificate(dependencies = { beginIssuance, completeIssuance, getIssuance, findVerifiedAttributes, writeSignedCertificate }): CertifierRoute {
+  return {
+    type: 'post', path: '/signCertificate', summary: 'Sign exactly the freshly verified account attributes.',
+    exampleResponse: { certificate: {}, serverNonce: 'Base64 nonce' },
+    func: async (req, res, server) => {
+      try {
+        const subject = requireSubject(req)
+        const type = requireString(req.body?.type, 'certificate type', 128)
+        const selected = Object.prototype.hasOwnProperty.call(certificateTypes, type) ? certificateTypes[type] : undefined
+        if (!selected) throw new RouteError(400, 'ERR_CERT_TYPE', 'This certificate family is not enabled.')
+        const { fields, masterKeyring } = req.body
+        if (!hasExactFields(fields, selected.fields) || !hasExactFields(masterKeyring, selected.fields)) {
+          throw new RouteError(400, 'ERR_EXPECTED_FIELDS', 'Supply exactly the required encrypted fields and field keys.')
+        }
+        const clientNonce = requireString(req.body.clientNonce, 'client nonce', 256)
+        let nonceValid = false
+        try { nonceValid = await verifyNonce(clientNonce, server.wallet, subject) } catch {}
+        if (!nonceValid) throw new RouteError(400, 'ERR_NONCE', 'The client nonce is invalid. Restart certificate acquisition.')
+        let decryptedFields: Record<string, string>
+        try { decryptedFields = await MasterCertificate.decryptFields(server.wallet, masterKeyring, fields, subject) }
+        catch { throw new RouteError(400, 'ERR_FIELDS', 'The encrypted certificate fields could not be verified.') }
+        if (!validAttributes(type, decryptedFields)) throw new RouteError(400, 'ERR_FIELDS', 'The certificate fields do not match this family schema.')
+        const operationId = createHash('sha256').update(canonical({ subject, type, clientNonce, fields, masterKeyring })).digest('hex')
+        const previous = await dependencies.getIssuance(operationId)
+        // Re-delivery of this exact completed request is not a new issuance.
+        if (previous?.state === 'completed') return res.status(200).json(previous.response)
+        const evidence = await dependencies.findVerifiedAttributes(subject, type)
+        const observed = evidence?.verifiedAttributes
+        const evidenceTime = evidence?.createdAt instanceof Date ? evidence.createdAt.getTime() : NaN
+        if (evidence?.identityKey !== subject || evidence?.type !== type ||
+            !validAttributes(type, observed) || !Number.isFinite(evidenceTime) ||
+            evidenceTime > Date.now() || Date.now() - evidenceTime > VERIFICATION_MAX_AGE_MS ||
+            !selected.fields.every(key => observed[key] === decryptedFields[key])) {
+          throw new RouteError(409, 'ERR_VERIFICATION_REQUIRED', 'Verify these exact account attributes again with this wallet before acquiring the certificate.')
+        }
+        const operation = await dependencies.beginIssuance(operationId)
+        if (operation?.state === 'completed') return res.status(200).json(operation.response)
+        if (operation?.state !== 'new') throw new RouteError(409, 'ERR_ISSUANCE_PENDING', 'This acquisition is pending or its outcome is uncertain. Retry the same request later; do not assume a certificate was received.')
+        const serverNonce = await createNonce(server.wallet, subject)
+        const { hmac } = await server.wallet.createHmac({
+          data: Utils.toArray(clientNonce + serverNonce, 'base64'), protocolID: [2, 'certificate issuance'],
+          keyID: serverNonce + clientNonce, counterparty: subject
         })
-      }
-      console.log("INSIDE SIGN CERTIFICATE")
-      const { clientNonce, type, fields, masterKeyring } = req.body
-      // Verify the client actually created the provided nonce
-      await verifyNonce(clientNonce, server.wallet, req.auth.identityKey)
-
-      // Server creates a random nonce that the client can verify
-      const serverNonce = await createNonce(server.wallet, req.auth.identityKey)
-      // The server computes a serial number from the client and server nonces
-      const { hmac } = await server.wallet.createHmac({
-        data: Utils.toArray(clientNonce + serverNonce, 'base64'),
-        protocolID: [2, 'certificate issuance'],
-        keyID: serverNonce + clientNonce,
-        counterparty: req.auth.identityKey
-      })
-      const serialNumber = Utils.toBase64(hmac)
-
-
-      // Decrypt certificate fields and verify them before signing
-      const decryptedFields = await MasterCertificate.decryptFields(
-        server.wallet,
-        masterKeyring,
-        fields,
-        req.auth.identityKey
-      )
-
-      // Check encrypted fields and decrypt them
-      const selectedCertificate = certificateTypes[req.body.type]
-      if (!selectedCertificate) {
-        return res.status(400).json({
-          status: 'error',
-          code: 'ERR_CERT_TYPE',
-          description: 'Selected certificate is not in certifacteTypes'
-        })
-      }
-      const expectedFields = selectedCertificate.fields
-      console.log(`EXPECTED FIELDS: ${expectedFields}`)
-      // Only validate the expected field keys?
-      if (!expectedFields.every((x: string) => !!decryptedFields[x])) {
-        return res.status(400).json({
-          status: 'error',
-          code: 'ERR_EXPECTED_FIELDS',
-          description: 'One or more expected certificate fields is missing or invalid.'
-        })
-      }
-      console.log("BEFORE MONO DB CHECK")
-      const client = await getMongoClient()
-      const verifications = client.db(DB_NAME).collection('verifications')
-      const dbCertificate = await verifications.findOne({
-        identityKey: req.auth.identityKey,
-        "verifiedAttributes.email": decryptedFields.email
-      });
-      console.log(dbCertificate)
-      if (!dbCertificate) {
-        return res.status(400).json({
-          status: 'error',
-          code: 'ERR_EXPECTED_FIELDS',
-          description: 'Certificate could not be found in the database'
-        })
-      }
-      console.log({ decryptedFields })
-      if (JSON.stringify(certificateFields) === JSON.stringify(decryptedFields)) {
-        return res.status(400).json({
-          status: 'error',
-          code: 'ERR_EXPECTED_FIELDS',
-          description: 'Certificate fields do not match decrypted fields'
-        });
-      }
-      console.log("AFTER MONGO DB CHECK")
-      const revocationTxid = '0000000000000000000000000000000000000000000000000000000000000000'
-      const signedCertificate = new Certificate(
-        type,
-        serialNumber,
-        req.auth.identityKey,
-        ((await server.wallet.getPublicKey({ identityKey: true })).publicKey),
-        `${revocationTxid}.0`,
-        fields
-      )
-
-      await signedCertificate.sign(server.wallet)
-
-      await writeSignedCertificate(req.auth?.identityKey, signedCertificate.serialNumber, signedCertificate)
-
-      return res.status(200).json({
-        certificate: signedCertificate,
-        serverNonce
-      })
-    } catch (e) {
-      console.error(e)
-      return res.status(500).json({
-        status: 'error',
-        code: 'ERR_INTERNAL',
-        description: 'An internal error has occurred.'
-      })
+        const certificate = new Certificate(type, Utils.toBase64(hmac), subject,
+          (await server.wallet.getPublicKey({ identityKey: true })).publicKey,
+          `${'0'.repeat(64)}.0`, fields)
+        await certificate.sign(server.wallet)
+        await dependencies.writeSignedCertificate(subject, certificate.serialNumber, certificate)
+        const response = { certificate, serverNonce }
+        await dependencies.completeIssuance(operationId, response)
+        return res.status(200).json(response)
+      } catch (error) { return respondError(res, error) }
     }
   }
 }
+
+export const signCertificate = createSignCertificate()

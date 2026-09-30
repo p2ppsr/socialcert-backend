@@ -1,96 +1,91 @@
 import { MongoClient } from 'mongodb'
+import { validAttributes, VERIFICATION_MAX_AGE_MS } from '../certifier'
 
-// Declare a minimal type for res so that it can be used in writeVerifiedAttributes.
-declare const res: {
-  status: (code: number) => { json: (body: any) => any }
-}
-
-const { NODE_ENV } = process.env
-const nodeEnv: string = NODE_ENV! // non-null assertion since NODE_ENV is required
 let mongoClient: MongoClient | null = null
-const DB_NAME: string = `${nodeEnv}_socialcert`
+let connecting: Promise<MongoClient> | undefined
+export const socialDatabaseName = (): string => `${process.env.NODE_ENV || 'development'}_socialcert`
 
-// Connect to MongoDB if not already connected.
-export async function connectToMongoDB(): Promise<void> {
-  if (!mongoClient) {
-    try {
-      const connectionString: string = process.env.SIGNIA_DB_CONNECTION!
-      mongoClient = new MongoClient(connectionString)
-      await mongoClient.connect()
-      console.log('Connected to MongoDB')
-    } catch (err) {
-      console.error('Error connecting to MongoDB:', err)
-      // Handle error, e.g., throw an exception or exit the application.
-    }
-  }
-}
-
-// Ensure a MongoClient instance is available.
 export async function getMongoClient(): Promise<MongoClient> {
-  if (!mongoClient) {
-    await connectToMongoDB()
+  if (mongoClient) return mongoClient
+  if (!connecting) {
+    connecting = (async () => {
+      if (!process.env.SIGNIA_DB_CONNECTION) throw new Error('Database not configured')
+      const client = new MongoClient(process.env.SIGNIA_DB_CONNECTION, {
+        serverSelectionTimeoutMS: 10000, connectTimeoutMS: 10000, socketTimeoutMS: 10000
+      })
+      try {
+        await client.connect()
+        mongoClient = client
+        return client
+      } catch (error) {
+        await client.close().catch(() => undefined)
+        throw error
+      }
+    })()
   }
-  return mongoClient!
+  try { return await connecting } finally { connecting = undefined }
 }
 
-// Writes verified attributes to the verificationData collection.
-export const writeVerifiedAttributes = async (
-  identityKey: string,
-  verifiedAttributes: any
-): Promise<any> => {
-  const client = await getMongoClient()
-  const collection = client.db(DB_NAME).collection('verifications')
-  await collection.updateOne(
-    { identityKey, verifiedAttributes }, // Update certificate if already exists.
-    {
-      $set: {
-        identityKey,
-        verifiedAttributes,
-        createdAt: new Date(), 
-      },
-    },
-    { upsert: true } // This ensures a new document is created if no match is found.
-  )
-}
+export async function connectToMongoDB(): Promise<void> { await getMongoClient() }
 
-// Writes a signed certificate to the certifications collection.
-export const writeSignedCertificate = async (
-  identityKey: string,
-  serialNumber: string,
-  signedCertificate: any
-): Promise<void> => {
+export async function writeVerifiedAttributes(identityKey: string, type: string, verifiedAttributes: Record<string, string>): Promise<void> {
+  if (!identityKey || !validAttributes(type, verifiedAttributes)) throw new Error('Invalid verification decision')
   const client = await getMongoClient()
-  const collection = client.db(DB_NAME).collection('certifications')
-
-  await collection.updateOne(
-    { identityKey, serialNumber }, // Update certificate if already exists.
-    {
-      $set: {
-        identityKey,
-        serialNumber,
-        signedCertificate,
-        createdAt: new Date(),
-      },
-    },
+  await client.db(socialDatabaseName()).collection('verifications').updateOne(
+    { identityKey, type },
+    { $set: { identityKey, type, verifiedAttributes, createdAt: new Date() } },
     { upsert: true }
   )
 }
 
-// Deletes all certifications for a given identityKey.
-export const deleteUserData = async (identityKey: string): Promise<void> => {
+export async function findVerifiedAttributes(identityKey: string, type: string): Promise<any> {
   const client = await getMongoClient()
-  await client.db(DB_NAME).collection('certifications').deleteMany({ identityKey })
+  return await client.db(socialDatabaseName()).collection('verifications').findOne({
+    identityKey, type, createdAt: { $gte: new Date(Date.now() - VERIFICATION_MAX_AGE_MS) }
+  }, { sort: { createdAt: -1 } })
 }
 
-// Loads a certificate from the certifications collection.
-export const loadCertificate = async (identityKey: string): Promise<any[]> => {
+export async function writeSignedCertificate(identityKey: string, serialNumber: string, signedCertificate: any): Promise<void> {
   const client = await getMongoClient()
-  const results = await client
-    .db(DB_NAME)
-    .collection('certifications')
-    .find({ identityKey })
-    .project({ certificate: 1 })
-    .toArray()
+  await client.db(socialDatabaseName()).collection('certifications').updateOne(
+    { identityKey, serialNumber },
+    { $set: { identityKey, serialNumber, signedCertificate, createdAt: new Date() } },
+    { upsert: true }
+  )
+}
 
-  return results
+// Existing request nonce/payload identifies an attempt, with no new wire member.
+export async function getIssuance(id: string): Promise<any> {
+  const client = await getMongoClient()
+  return await client.db(socialDatabaseName()).collection('issuanceOperations').findOne({ _id: id as any })
+}
+
+export async function beginIssuance(id: string): Promise<any> {
+  const client = await getMongoClient()
+  const operations = client.db(socialDatabaseName()).collection('issuanceOperations')
+  const result = await operations.updateOne(
+    { _id: id as any }, { $setOnInsert: { state: 'pending', createdAt: new Date() } }, { upsert: true }
+  )
+  if (result.upsertedCount === 1) return { state: 'new' }
+  return await operations.findOne({ _id: id as any })
+}
+
+export async function completeIssuance(id: string, response: any): Promise<void> {
+  const client = await getMongoClient()
+  const result = await client.db(socialDatabaseName()).collection('issuanceOperations').updateOne(
+    { _id: id as any, state: 'pending' },
+    { $set: { state: 'completed', response, completedAt: new Date() } }
+  )
+  if (result.matchedCount !== 1) throw new Error('Issuance operation could not be completed')
+}
+
+export async function deleteUserData(identityKey: string): Promise<void> {
+  const client = await getMongoClient()
+  await client.db(socialDatabaseName()).collection('certifications').deleteMany({ identityKey })
+}
+
+export async function loadCertificate(identityKey: string): Promise<any[]> {
+  const client = await getMongoClient()
+  return await client.db(socialDatabaseName()).collection('certifications')
+    .find({ identityKey }).project({ signedCertificate: 1 }).toArray()
 }

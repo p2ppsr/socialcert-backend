@@ -6,6 +6,11 @@ if [[ "${ENVIRONMENT:-}" != "prod" && "${ENVIRONMENT:-}" != "production" ]]; the
   exit 2
 fi
 
+if [[ ! "${IMAGE_DIGEST:-}" =~ ^sha256:[a-f0-9]{64}$ ]]; then
+  echo 'IMAGE_DIGEST is required and must name immutable pushed content' >&2
+  exit 2
+fi
+
 if [[ -z "${IMAGE_TAG:-}" ]]; then
   if [[ -z "${SOURCE_SHA:-}" ]]; then
     echo "IMAGE_TAG or SOURCE_SHA is required" >&2
@@ -27,14 +32,42 @@ cp -R "${repo_root}/infra/kubernetes" "${tmp_dir}/infra/kubernetes"
 overlay_dir="${tmp_dir}/infra/kubernetes/overlays/prod"
 kustomization="${overlay_dir}/kustomization.yaml"
 
-export IMAGE_TAG REGISTRY_PULL="${registry_pull}"
+export IMAGE_TAG IMAGE_DIGEST REGISTRY_PULL="${registry_pull}"
 perl -0pi -e 's#newName: [^\n]*/p2ppsr/socialcert-backend#newName: $ENV{REGISTRY_PULL}/p2ppsr/socialcert-backend#g' "${kustomization}"
-perl -0pi -e 's#newTag: [^\n]+#newTag: $ENV{IMAGE_TAG}#g' "${kustomization}"
+perl -0pi -e 's#newTag: [^\n]+#digest: $ENV{IMAGE_DIGEST}#g' "${kustomization}"
+
+# Gateway/TLS objects are owned and independently inspected by network-ops.
+# The scoped release identity cannot read Gateway API or EndpointSlices.
+# Check the actual TLS-valid public route without expanding its permissions.
+curl --fail --show-error --silent --max-time 15 https://backend.socialcert.net/healthz |
+  jq -e '.status == "ok"' >/dev/null
+
+rendered="${tmp_dir}/rendered.yaml"
+"${kubectl_cmd}" kustomize "${overlay_dir}" > "${rendered}"
+if grep -Eq 'kind: Ingress|ingressClassName: nginx' "${rendered}"; then
+  echo 'Refusing to recreate retired Ingress routing' >&2
+  exit 1
+fi
 
 "${kubectl_cmd}" apply -f "${overlay_dir}/namespace.yaml"
-"${kubectl_cmd}" kustomize "${overlay_dir}" | "${kubectl_cmd}" apply -f -
+"${kubectl_cmd}" apply -f "${rendered}"
 "${kubectl_cmd}" -n socialcert-backend-prod rollout status deployment/socialcert-backend --timeout=15m
 "${kubectl_cmd}" -n socialcert-backend-prod wait --for=condition=Ready certificate/socialcert-backend-tls --timeout=15m
+
+expected_image="${registry_pull}/p2ppsr/socialcert-backend@${IMAGE_DIGEST}"
+"${kubectl_cmd}" -n socialcert-backend-prod get deployment socialcert-backend -o json |
+  jq -e --arg image "${expected_image}" '
+    .status.observedGeneration == .metadata.generation and
+    .spec.replicas == 2 and .status.updatedReplicas == 2 and
+    .status.readyReplicas == 2 and .status.availableReplicas == 2 and
+    .spec.template.spec.containers[0].image == $image' >/dev/null
+"${kubectl_cmd}" -n socialcert-backend-prod get pods -l app.kubernetes.io/name=socialcert-backend -o json |
+  jq -e --arg digest "${IMAGE_DIGEST}" '
+    [.items[] | select(.metadata.deletionTimestamp == null) |
+      .status.containerStatuses[]? | select(.ready == true)] as $ready |
+    ($ready | length) == 2 and all($ready[]; .imageID | endswith("@" + $digest))' >/dev/null
+"${kubectl_cmd}" -n socialcert-backend-prod get endpoints socialcert-backend -o json |
+  jq -e '[.subsets[]?.addresses[]? | .nodeName] | unique | length == 2' >/dev/null
 
 "${kubectl_cmd}" -n socialcert-backend-prod run "socialcert-backend-smoke-$(date +%s)" \
   --quiet \
@@ -44,4 +77,4 @@ perl -0pi -e 's#newTag: [^\n]+#newTag: $ENV{IMAGE_TAG}#g' "${kustomization}"
   --image=curlimages/curl:8.11.1 \
   --command -- curl --fail --show-error --silent http://socialcert-backend:8080/healthz
 
-printf 'socialcert-backend prod deployment completed for image tag %s\n' "${IMAGE_TAG}"
+printf 'socialcert-backend prod deployment completed for image %s\n' "${expected_image}"
