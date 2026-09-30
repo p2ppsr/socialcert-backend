@@ -36,13 +36,11 @@ export IMAGE_TAG IMAGE_DIGEST REGISTRY_PULL="${registry_pull}"
 perl -0pi -e 's#newName: [^\n]*/p2ppsr/socialcert-backend#newName: $ENV{REGISTRY_PULL}/p2ppsr/socialcert-backend#g' "${kustomization}"
 perl -0pi -e 's#newTag: [^\n]+#digest: $ENV{IMAGE_DIGEST}#g' "${kustomization}"
 
-# Gateway routes and their TLS listeners are owned by network-ops. Preserve
-# those objects and refuse a release if the existing customer route is absent.
-"${kubectl_cmd}" -n socialcert-backend-prod get httproutes.gateway.networking.k8s.io -o json |
-  jq -e 'any(.items[]; .metadata.generation as $generation |
-    ((.spec.hostnames // []) | index("backend.socialcert.net")) != null and
-    any(.spec.rules[]?.backendRefs[]?; .name == "socialcert-backend" and .port == 8080) and
-    any(.status.parents[]?.conditions[]?; .type == "Accepted" and .status == "True" and .observedGeneration == $generation))' >/dev/null
+# Gateway/TLS objects are owned and independently inspected by network-ops.
+# The scoped release identity cannot read Gateway API or EndpointSlices.
+# Check the actual TLS-valid public route without expanding its permissions.
+curl --fail --show-error --silent --max-time 15 https://backend.socialcert.net/healthz |
+  jq -e '.status == "ok"' >/dev/null
 
 rendered="${tmp_dir}/rendered.yaml"
 "${kubectl_cmd}" kustomize "${overlay_dir}" > "${rendered}"
@@ -68,8 +66,8 @@ expected_image="${registry_pull}/p2ppsr/socialcert-backend@${IMAGE_DIGEST}"
     [.items[] | select(.metadata.deletionTimestamp == null) |
       .status.containerStatuses[]? | select(.ready == true)] as $ready |
     ($ready | length) == 2 and all($ready[]; .imageID | endswith("@" + $digest))' >/dev/null
-"${kubectl_cmd}" -n socialcert-backend-prod get endpointslices.discovery.k8s.io -l kubernetes.io/service-name=socialcert-backend -o json |
-  jq -e '[.items[].endpoints[]? | select(.conditions.ready == true) | .nodeName] | unique | length == 2' >/dev/null
+"${kubectl_cmd}" -n socialcert-backend-prod get endpoints socialcert-backend -o json |
+  jq -e '[.subsets[]?.addresses[]? | .nodeName] | unique | length == 2' >/dev/null
 
 "${kubectl_cmd}" -n socialcert-backend-prod run "socialcert-backend-smoke-$(date +%s)" \
   --quiet \
