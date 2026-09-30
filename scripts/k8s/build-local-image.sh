@@ -20,6 +20,10 @@ push_image="${registry_push}/p2ppsr/socialcert-backend:${image_tag}"
 pull_image="${registry_pull}/p2ppsr/socialcert-backend:${image_tag}"
 
 docker build --build-arg SOURCE_COMMIT="${source_sha}" -t "${push_image}" .
+# The scoped runner intentionally has no host compiler/Python toolchain.
+# Validate the exact candidate in its existing build/runtime environment.
+docker run --rm --network none "${push_image}" sh -c \
+  'npm run lint && npm run typecheck && npm test && npm run build'
 docker push "${push_image}"
 
 # Pin the pushed content, rather than asking Kubernetes to resolve a mutable tag.

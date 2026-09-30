@@ -33,20 +33,7 @@ jobs:
         with:
           ref: ${{ inputs.source_sha || github.sha }}
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-
-      - name: Validate final source
-        run: |
-          npm ci
-          npm run lint
-          npm run typecheck
-          npm test
-          npm run build
-
-      - name: Build and push image
+      - name: Build, validate and push exact image
         id: build
         env:
           ENVIRONMENT: prod
