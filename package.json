@@ -1,20 +1,24 @@
 {
   "name": "socialcert-backend",
-  "version": "0.1.28",
+  "version": "0.1.29",
   "description": "Provides a signed certificate for an array of social platforms, email, and phone.",
   "main": "out/index.js",
   "devDependencies": {
     "@types/express": "^5.0.0",
     "@types/node": "^22.13.9",
+    "@typescript-eslint/parser": "7.18.0",
     "ejs": "^3.1.9",
+    "eslint": "8.56.0",
     "standard": "^17.1.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.2"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "node --require ts-node/register --test tests/*.test.cjs",
     "start": "node out/index.js",
-    "build": "tsc"
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint --ext .ts,.js,.cjs src tests"
   },
   "repository": {
     "type": "git",

@@ -104,7 +104,7 @@ module.exports = {
         description: 'Route not supported!'
       })
     } catch (error) {
-      console.error(error)
+      console.error('Unsupported revocation route failed')
       res.status(500).json({
         status: 'error',
         code: 'ERR_INTERNAL',

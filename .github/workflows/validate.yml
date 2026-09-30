@@ -1,0 +1,28 @@
+name: Validate SocialCert backend
+on:
+  pull_request:
+  push:
+    branches-ignore: [master, production]
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - name: Validate release scripts and routing ownership
+        run: |
+          bash -n scripts/k8s/build-local-image.sh scripts/k8s/deploy-local.sh
+          if grep -R -E 'kind: Ingress|ingressClassName: nginx' infra/kubernetes; then
+            echo 'Application releases must not recreate retired Ingress resources.'
+            exit 1
+          fi

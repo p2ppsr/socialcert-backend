@@ -1,142 +1,56 @@
-require('dotenv').config()
-const axios = require('axios')
-import { Response } from 'express';
-import { CertifierRoute } from "../CertifierServer";
-import { AuthRequest } from '@bsv/auth-express-middleware'
+import axios from 'axios'
+import type { CertifierRoute } from '../CertifierServer'
 import { writeVerifiedAttributes } from '../utils/databaseHelpers'
+import { certificateType } from '../certificates/discordcert'
+import { PROVIDER_TIMEOUT_MS, validAttributes } from '../certifier'
+import { requireString, requireSubject, respondError, RouteError } from '../utils/routeErrors'
 
-const DISCORD_API_ENDPOINT = process.env.DISCORD_API_ENDPOINT as string
-const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID as string
-const DISCORD_CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET as string
-const DISCORD_REDIRECT_URI = process.env.DISCORD_REDIRECT_URI as string
-
-export const checkDiscordVerification: CertifierRoute = {
-  type: 'post',
-  path: '/handleDiscordVerification',
-  summary: 'Submit KYC verification proof for the current user',
-  parameters: {
-    accessCode: { type: 'string' },
-    funcAction: { type: 'string' }
-  },
-  exampleResponse: {
-    status: 'verified | notVerified'
-  },
-  func: async (req: AuthRequest, res: Response) => {
-    console.log(`INSIDE HANDLE DISCORD VERIFICATION`)
-    
-    try {
-      if (req.body.funcAction === 'getDiscordData') {
-        console.log("Processing getDiscordData action");
-        return await getUserDiscordData(req, res);
-      } else if (req.body.funcAction === 'verifyCode') {
-        console.log("Processing verifyCode action - not yet implemented");
-        return res.status(501).json({
-          status: 'notImplemented',
-          message: 'This functionality is not yet implemented'
-        });
-      } else {
-        console.log("Unknown funcAction:", req.body.funcAction);
-        return res.status(400).json({
-          status: 'error',
-          message: 'Invalid funcAction specified'
-        });
-      }
-    } catch (error) {
-      console.error('Error in checkDiscordVerification:', error);
-      return res.status(500).json({
-        status: 'error',
-        message: 'Internal server error'
-      });
+export function createDiscordVerification(dependencies = { http: axios, writeVerifiedAttributes }): CertifierRoute {
+  return {
+    type: 'post', path: '/handleDiscordVerification', summary: 'Verify account access through Discord authorization.',
+    exampleResponse: { userName: 'example', profilePhoto: 'https://cdn.discordapp.com/avatars/example/image.png' },
+    func: async (req, res) => {
+      try {
+        const subject = requireSubject(req)
+        if (req.body?.funcAction !== 'getDiscordData') throw new RouteError(400, 'ERR_ACTION', 'Choose a supported Discord action.')
+        const code = requireString(req.body.accessCode, 'authorization code')
+        const endpoint = process.env.DISCORD_API_ENDPOINT
+        const data = new URLSearchParams({
+          grant_type: 'authorization_code', code, redirect_uri: process.env.DISCORD_REDIRECT_URI
+        })
+        const tokenResponse = await dependencies.http.post(`${endpoint}/oauth2/token`, data.toString(), {
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          auth: { username: process.env.DISCORD_CLIENT_ID, password: process.env.DISCORD_CLIENT_SECRET },
+          timeout: PROVIDER_TIMEOUT_MS
+        })
+        const token = requireString(tokenResponse.data?.access_token, 'provider access token')
+        const profile = await dependencies.http.get(`${endpoint}/oauth2/@me`, {
+          headers: { Authorization: `Bearer ${token}` }, timeout: PROVIDER_TIMEOUT_MS
+        })
+        const user = profile.data?.user
+        if (profile.status !== 200 || typeof user?.id !== 'string' || !/^\d{1,20}$/.test(user.id)) {
+          throw new RouteError(422, 'ERR_PROVIDER_ATTRIBUTES', 'Discord did not provide a usable account profile. No certificate was acquired.')
+        }
+        let profilePhoto: string
+        if (typeof user.avatar === 'string' && /^(?:a_)?[a-f0-9]{1,64}$/.test(user.avatar)) {
+          profilePhoto = `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`
+        } else if (user.avatar === null && typeof user.discriminator === 'string' && /^\d{1,4}$/.test(user.discriminator)) {
+          // Discord's documented default-avatar mapping, from authenticated
+          // provider data. https://docs.discord.com/developers/reference#image-formatting
+          const index = user.discriminator === '0'
+            ? Number((BigInt(user.id) >> 22n) % 6n)
+            : Number(user.discriminator) % 5
+          profilePhoto = `https://cdn.discordapp.com/embed/avatars/${index}.png`
+        } else {
+          throw new RouteError(422, 'ERR_PROVIDER_ATTRIBUTES', 'Discord did not provide a usable account image. No certificate was acquired.')
+        }
+        const attributes = { userName: user.username, profilePhoto }
+        if (!validAttributes(certificateType, attributes)) throw new RouteError(422, 'ERR_PROVIDER_ATTRIBUTES', 'Discord did not provide the required account attributes.')
+        await dependencies.writeVerifiedAttributes(subject, certificateType, attributes)
+        return res.status(200).json(attributes)
+      } catch (error) { return respondError(res, error) }
     }
   }
 }
 
-async function getUserDiscordData(req: AuthRequest, res: Response) {
-  console.log("Inside getUserDiscordData with code:", req.body.accessCode?.substring(0, 5) + "...");
-  
-  try {
-    if (!req.body.accessCode) {
-      console.log("No access code provided");
-      return res.status(400).json({
-        status: 'notVerified',
-        description: 'No access code provided'
-      });
-    }
-    
-    const data = new URLSearchParams({
-      grant_type: 'authorization_code',
-      code: req.body.accessCode,
-      redirect_uri: DISCORD_REDIRECT_URI
-    });
-
-    const headers = {
-      'Content-Type': 'application/x-www-form-urlencoded'
-    };
-
-    console.log(`Requesting token from Discord API with params:`, {
-      endpoint: `${DISCORD_API_ENDPOINT}/oauth2/token`,
-      redirect_uri: DISCORD_REDIRECT_URI,
-      client_id_length: DISCORD_CLIENT_ID?.length || 0
-    });
-    
-    const authResponse = await axios.post(`${DISCORD_API_ENDPOINT}/oauth2/token`, data, {
-      headers: headers,
-      auth: {
-        username: DISCORD_CLIENT_ID,
-        password: DISCORD_CLIENT_SECRET
-      }
-    });
-
-    const access_token = authResponse.data.access_token;
-    console.log(`Access token received: ${access_token}`);
-    
-    console.log(`Requesting user data from Discord API`);
-    const dataResponse = await axios.get(`${DISCORD_API_ENDPOINT}/oauth2/@me`, { 
-      headers: { Authorization: `Bearer ${access_token}` } 
-    });
-
-    console.log(`Data Response status:`, dataResponse.status);
-    
-    if (!dataResponse || dataResponse.status !== 200) {
-      console.log("Invalid data response:", dataResponse?.status);
-      return res.status(400).json({
-        status: 'notVerified',
-        description: 'User identity has not been verified!'
-      });
-    }
-    
-    const userData = {
-      userName: dataResponse.data.user.username,
-      profilePhoto: `https://cdn.discordapp.com/avatars/${dataResponse.data.user.id}/${dataResponse.data.user.avatar}.png`
-    };
-
-    console.log(`User data processed:`, userData);
-    
-    await writeVerifiedAttributes(
-      req.auth.identityKey,
-      {
-        userName: userData.userName,
-        profilePhoto: userData.profilePhoto
-      }
-    );
-    
-    return res.status(200).json({
-        userName: userData.userName,
-        profilePhoto: userData.profilePhoto
-    });
-
-  } catch (error) {
-    console.error("Error in getUserDiscordData:", error);
-    if (axios.isAxiosError(error)) {
-      console.error("Axios error details:", {
-        status: error.response?.status,
-        data: error.response?.data,
-        message: error.message
-      });
-    }
-    return res.status(500).json({
-      status: 'error',
-      description: 'Error getting user data from Discord'
-    });
-  }
-}
+export const checkDiscordVerification = createDiscordVerification()
