@@ -8,5 +8,5 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .
-RUN npm run build
+RUN --network=none npm run lint && npm run typecheck && npm test && npm run build
 CMD ["node", "out/index.js"]
