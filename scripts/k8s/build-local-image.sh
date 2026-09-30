@@ -19,7 +19,7 @@ registry_pull="${REGISTRY_PULL:-registry.cars-operator-system.svc.cluster.local:
 push_image="${registry_push}/p2ppsr/socialcert-backend:${image_tag}"
 pull_image="${registry_pull}/p2ppsr/socialcert-backend:${image_tag}"
 
-docker build --build-arg SOURCE_COMMIT="${source_sha}" -t "${push_image}" .
+docker build --platform linux/amd64 --provenance=false --build-arg SOURCE_COMMIT="${source_sha}" -t "${push_image}" .
 # Dockerfile validates lint/type/test/build in a network-isolated build layer.
 # Rootless CI supports BuildKit but cannot run standalone cgroup containers.
 docker push "${push_image}"

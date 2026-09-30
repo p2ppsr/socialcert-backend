@@ -19,6 +19,8 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+      - name: Validate isolated image build
+        run: docker build --platform linux/amd64 --provenance=false -t socialcert-backend-check .
       - name: Validate release scripts and routing ownership
         run: |
           bash -n scripts/k8s/build-local-image.sh scripts/k8s/deploy-local.sh
