@@ -1,6 +1,6 @@
 {
   "name": "socialcert-backend",
-  "version": "0.1.29",
+  "version": "0.1.30",
   "description": "Provides a signed certificate for an array of social platforms, email, and phone.",
   "main": "out/index.js",
   "devDependencies": {
@@ -33,7 +33,7 @@
   "dependencies": {
     "@bsv/auth-express-middleware": "^2.2.1",
     "@bsv/payment-express-middleware": "^2.1.5",
-    "@bsv/sdk": "^2.5.0",
+    "@bsv/sdk": "2.8.10",
     "@bsv/wallet-toolbox": "^2.9.0",
     "axios": "^1.8.2",
     "crypto": "^1.0.1",

@@ -1,4 +1,4 @@
-import { WalletInterface } from '@bsv/sdk'
+import { AsyncSessionManager, WalletInterface } from '@bsv/sdk'
 import express, { Request, Response } from 'express'
 import { AuthMiddlewareOptions, createAuthMiddleware } from '@bsv/auth-express-middleware'
 import { createPaymentMiddleware } from '@bsv/payment-express-middleware'
@@ -9,6 +9,8 @@ import { AuthRequest } from '@bsv/auth-express-middleware'
 export interface CertifierServerOptions {
   port: number
   wallet: WalletInterface
+  sessionManager: AsyncSessionManager
+  checkAuthStore?: () => Promise<void>
   monetize: boolean
   calculateRequestPrice?: (req: Request) => number | Promise<number>
 }
@@ -29,12 +31,17 @@ export class CertifierServer {
   wallet: WalletInterface
   private readonly monetize: boolean
   private readonly calculateRequestPrice?: (req: Request) => number | Promise<number>
+  private readonly sessionManager: AsyncSessionManager
+  private readonly checkAuthStore?: () => Promise<void>
 
   constructor(storage: any, options: CertifierServerOptions) {
     this.port = options.port
     this.wallet = options.wallet
     this.monetize = options.monetize
     this.calculateRequestPrice = options.calculateRequestPrice
+    if (!options.sessionManager) throw new Error('Shared authentication sessions are required')
+    this.sessionManager = options.sessionManager
+    this.checkAuthStore = options.checkAuthStore
 
     this.setupRoutes()
   }
@@ -62,6 +69,10 @@ export class CertifierServer {
     this.app.get('/healthz', (req: Request, res: Response) => {
       res.status(200).json({ status: 'ok' })
     })
+    this.app.get('/readyz', async (_req: Request, res: Response) => {
+      try { await this.checkAuthStore?.(); res.status(200).json({ status: 'ok' }) }
+      catch { res.status(503).json({ status: 'error', code: 'ERR_AUTH_STORE_UNAVAILABLE' }) }
+    })
 
     this.app.get('/metadata', async (_req: Request, res: Response) => {
       try {
@@ -75,6 +86,7 @@ export class CertifierServer {
     // Configure the auth and payment middleware
     this.app.use(createAuthMiddleware({
       wallet: this.wallet,
+      sessionManager: this.sessionManager,
       logger: Object.assign(Object.create(console), { error: () => console.error('Authentication request failed'), warn: () => {}, info: () => {}, debug: () => {}, log: () => {} }),
       logLevel: 'error'
     }))

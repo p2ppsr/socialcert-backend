@@ -10,6 +10,13 @@ on:
       source_sha:
         description: Source SHA to deploy
         required: false
+      candidate_only:
+        description: Build and push a candidate without production deployment
+        type: boolean
+        default: false
+      qualified_digest:
+        description: Optional canary-qualified digest; refuse different build content
+        required: false
 
 concurrency:
   group: socialcert-backend-prod-local
@@ -41,8 +48,15 @@ jobs:
         run: scripts/k8s/build-local-image.sh
 
       - name: Deploy to local Kubernetes
+        if: ${{ inputs.candidate_only != true }}
         env:
           ENVIRONMENT: prod
           IMAGE_TAG: ${{ steps.build.outputs.image_tag }}
           IMAGE_DIGEST: ${{ steps.build.outputs.image_digest }}
-        run: scripts/k8s/deploy-local.sh
+          QUALIFIED_DIGEST: ${{ inputs.qualified_digest }}
+        run: |
+          if [[ -n "${QUALIFIED_DIGEST}" && "${IMAGE_DIGEST}" != "${QUALIFIED_DIGEST}" ]]; then
+            echo 'Built image differs from the canary-qualified digest; refusing deployment.' >&2
+            exit 1
+          fi
+          scripts/k8s/deploy-local.sh
