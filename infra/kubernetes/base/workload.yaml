@@ -51,7 +51,7 @@ spec:
                 name: socialcert-backend-secrets
           readinessProbe:
             httpGet:
-              path: /healthz
+              path: /readyz
               port: http
             periodSeconds: 10
             timeoutSeconds: 5

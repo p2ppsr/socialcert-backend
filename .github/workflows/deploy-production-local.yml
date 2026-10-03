@@ -10,6 +10,10 @@ on:
       source_sha:
         description: Source SHA to deploy
         required: false
+      candidate_only:
+        description: Build and push a candidate without production deployment
+        type: boolean
+        default: false
 
 concurrency:
   group: socialcert-backend-prod-local
@@ -41,6 +45,7 @@ jobs:
         run: scripts/k8s/build-local-image.sh
 
       - name: Deploy to local Kubernetes
+        if: ${{ inputs.candidate_only != true }}
         env:
           ENVIRONMENT: prod
           IMAGE_TAG: ${{ steps.build.outputs.image_tag }}

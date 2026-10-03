@@ -69,7 +69,7 @@ for (const [name, type, fields] of [['Email', emailType, { email }], ['X', xType
       protocolID: [2, 'certificate issuance'], keyID: result.body.serverNonce + f.body.clientNonce, counterparty: f.issuerKey
     })
     assert.equal(c.serialNumber, Utils.toBase64(serial.hmac))
-    assert.deepEqual(await MasterCertificate.decryptFields(f.client, f.body.masterKeyring, c.fields, f.issuerKey), fields)
+    assert.deepEqual({ ...await MasterCertificate.decryptFields(f.client, f.body.masterKeyring, c.fields, f.issuerKey) }, fields)
     assert.equal(f.writes, 1)
     const replay = await f.run()
     assert.deepEqual(JSON.parse(JSON.stringify(replay.body)), JSON.parse(JSON.stringify(result.body)))
@@ -334,7 +334,8 @@ test('local HTTP BRC authentication transports real encrypted issuance and leave
   const { CertifierServer } = require('../src/CertifierServer')
   const { AuthFetch } = require('@bsv/sdk')
   const f = await signingFixture()
-  const service = new CertifierServer({}, { port: 0, wallet: f.issuer, monetize: false })
+  const { SessionManager } = require('@bsv/sdk')
+  const service = new CertifierServer({}, { port: 0, wallet: f.issuer, monetize: false, sessionManager: new SessionManager() })
   // Test-only downstream route uses the production global authentication
   // middleware and the same signing handler with an isolated fixture store.
   service.app.post('/fixture-issuance', (req, res) => f.route.func(req, res, service))
@@ -360,7 +361,7 @@ test('local HTTP BRC authentication transports real encrypted issuance and leave
     assert.equal(c.subject, f.subject)
     assert.equal(c.certifier, f.issuerKey)
     assert.equal(await new Certificate(c.type, c.serialNumber, c.subject, c.certifier, c.revocationOutpoint, c.fields, c.signature).verify(), true)
-    assert.deepEqual(await MasterCertificate.decryptFields(f.client, f.body.masterKeyring, c.fields, f.issuerKey), { email })
+    assert.deepEqual({ ...await MasterCertificate.decryptFields(f.client, f.body.masterKeyring, c.fields, f.issuerKey) }, { email })
     assert.equal(f.writes, 1)
   } finally {
     listener.closeAllConnections()
