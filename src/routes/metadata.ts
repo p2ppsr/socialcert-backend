@@ -3,13 +3,14 @@ import { xcert } from '../certificates/xcert'
 import { discordcert } from '../certificates/discordcert'
 import { VERIFICATION_MAX_AGE_MS } from '../certifier'
 import type { WalletInterface } from '@bsv/sdk'
+const { version } = require('../../package.json')
 
 // Source capabilities describe supported flows; they are not provider-health proof.
 export async function issuerMetadata(wallet: WalletInterface, network = process.env.BSV_NETWORK || 'main'): Promise<any> {
   const { publicKey } = await wallet.getPublicKey({ identityKey: true })
   if (!/^(02|03)[0-9a-f]{64}$/i.test(publicKey) || (network !== 'main' && network !== 'test')) throw new Error('Issuer metadata unavailable')
   return {
-    version: '0.1.29', sourceCommit: process.env.SOURCE_COMMIT || 'development', issuer: { publicKey, network },
+    version, sourceCommit: process.env.SOURCE_COMMIT || 'development', issuer: { publicKey, network },
     families: [
       { type: emailcert.certificateType, name: 'Email', fields: emailcert.certificateFields, enabled: true },
       { type: xcert.certificateType, name: 'X', fields: xcert.certificateFields, enabled: true },

@@ -276,6 +276,7 @@ test('Discord provider/storage/missing profile failures and legacy generic route
 test('metadata uses actual injected issuer identity and preserves enabled exact types/sentinel limits', async () => {
   const issuer = new ProtoWallet(PrivateKey.fromHex('2'.padStart(64, '0')))
   const metadata = await issuerMetadata(issuer, 'test')
+  assert.equal(metadata.version, require('../package.json').version)
   assert.equal(metadata.issuer.publicKey, (await issuer.getPublicKey({ identityKey: true })).publicKey)
   assert.deepEqual(metadata.families.filter(f => f.enabled).map(f => f.type), [emailType, xType, discordType])
   assert.equal(metadata.families.find(f => f.name === 'Telephone').enabled, false)
